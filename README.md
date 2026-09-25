@@ -30,7 +30,7 @@ The official website and conference management platform for **PyCon Nigeria** â€
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/pyconng/ng-pycon.git
+git clone https://github.com/pyung/ng-pycon.git
 cd ng-pycon
 ```
 

@@ -1,6 +1,6 @@
 Django==5.2.3
 wagtail==7.0.1
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.13
 python-dotenv==1.1.1
 wagtail-modeladmin==2.2.0
 requests==2.32.4
