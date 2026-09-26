@@ -367,7 +367,8 @@ class HomePage(Page):
         "home.StandardPage",
         "home.SponsorPage",
         "home.HomePage",
-    ]  # Standard pages, sponsor page, and nested year homepages
+        "meetups.MeetupIndexPage",
+    ]  # Standard pages, sponsor page, meetups index, and nested year homepages
 
     def get_default_child_class(self):
         from .models import StandardPage

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "home",
     "search",
     "editions",
+    "meetups",
     "accounts",
     "tickets",
     "cfp",

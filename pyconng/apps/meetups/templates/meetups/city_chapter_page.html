@@ -1,0 +1,98 @@
+{% extends base_template %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block body_class %}template-citychapterpage{% if page_theme %} {{ page_theme }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+
+    <section class="relative px-4 pt-16 pb-10 overflow-hidden">
+        {% if page.hero_image %}
+        {% image page.hero_image fill-1920x500 class="absolute inset-0 w-full h-full object-cover" alt=page.hero_image_alt %}
+        <div class="absolute inset-0 bg-gray-900/70" aria-hidden="true"></div>
+        {% endif %}
+        <div class="relative max-w-5xl mx-auto">
+            {% if index_page %}
+            <a href="{% pageurl index_page %}"
+               class="text-sm font-medium {% if page.hero_image %}text-gray-200 hover:text-white{% else %}text-teal-600 hover:text-teal-700{% endif %}">
+                &larr; All meetups
+            </a>
+            {% endif %}
+            <h1 class="mt-3 text-3xl md:text-4xl font-bold {% if page.hero_image %}text-white{% else %}text-gray-900{% endif %}">
+                {{ page.city|default:page.title }}
+            </h1>
+            {% if page.intro %}
+            <div class="mt-4 prose max-w-none {% if page.hero_image %}prose-invert text-gray-200{% else %}text-gray-600{% endif %}">
+                {{ page.intro|richtext }}
+            </div>
+            {% endif %}
+            {% if page.meetup_com_url %}
+            <a href="{{ page.meetup_com_url }}" target="_blank" rel="noopener noreferrer"
+               class="mt-5 inline-flex items-center px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                Join the {{ page.city|default:page.title }} group on Meetup.com
+            </a>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if page.organizers %}
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-xl font-bold text-gray-900 mb-5">Organizers</h2>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {% for block in page.organizers %}
+                <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+                    {% if block.value.photo %}
+                    {% image block.value.photo fill-96x96 class="w-14 h-14 rounded-full object-cover shrink-0" alt=block.value.photo_alt %}
+                    {% endif %}
+                    <div class="min-w-0">
+                        <p class="font-semibold text-gray-900 truncate">{{ block.value.name }}</p>
+                        {% if block.value.role %}
+                        <p class="text-sm text-gray-500 truncate">{{ block.value.role }}</p>
+                        {% endif %}
+                        {% if block.value.link %}
+                        <a href="{{ block.value.link }}" target="_blank" rel="noopener noreferrer"
+                           class="text-sm text-teal-600 hover:text-teal-700 underline">Profile</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-xl font-bold text-gray-900 mb-5">Upcoming</h2>
+            {% if upcoming_meetups %}
+            <div class="grid gap-5 md:grid-cols-2">
+                {% for meetup in upcoming_meetups %}
+                    {% include "meetups/includes/_meetup_card.html" with meetup=meetup %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500">Nothing scheduled in {{ page.city|default:page.title }} right now.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if past_meetups %}
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-xl font-bold text-gray-900 mb-5">Past meetups</h2>
+            <div class="grid gap-5 md:grid-cols-2">
+                {% for meetup in past_meetups %}
+                    {% include "meetups/includes/_meetup_card.html" with meetup=meetup %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if index_page and index_page.show_newsletter_signup %}
+    {% include "meetups/includes/_conversion_cta.html" with heading=index_page.newsletter_heading blurb=index_page.newsletter_blurb %}
+    {% endif %}
+
+</div>
+{% endblock %}

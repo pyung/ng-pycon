@@ -1,0 +1,93 @@
+{% extends base_template %}
+{% load wagtailcore_tags %}
+
+{% block body_class %}template-meetupindexpage{% if page_theme %} {{ page_theme }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+
+    <section class="px-4 pt-16 pb-10">
+        <div class="max-w-5xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">{{ page.title }}</h1>
+            {% if page.intro %}
+            <div class="mt-4 prose max-w-none text-gray-600">{{ page.intro|richtext }}</div>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if chapters %}
+    <section class="px-4 pb-8">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="sr-only">Filter by city</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="{% pageurl page %}"
+                   class="px-3 py-1.5 rounded-full text-sm font-medium border {% if not selected_city %}bg-gray-900 text-white border-gray-900{% else %}bg-white text-gray-600 border-gray-300 hover:border-gray-400{% endif %}">
+                    All cities
+                </a>
+                {% for chapter in chapters %}
+                <a href="{% pageurl page %}?city={{ chapter.slug }}"
+                   class="px-3 py-1.5 rounded-full text-sm font-medium border {% if selected_city == chapter.slug %}bg-gray-900 text-white border-gray-900{% else %}bg-white text-gray-600 border-gray-300 hover:border-gray-400{% endif %}">
+                    {{ chapter.specific.city|default:chapter.title }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-xl font-bold text-gray-900 mb-5">Upcoming</h2>
+            {% if upcoming_meetups %}
+            <div class="grid gap-5 md:grid-cols-2">
+                {% for meetup in upcoming_meetups %}
+                    {% include "meetups/includes/_meetup_card.html" with meetup=meetup show_city=True %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500">
+                No meetups scheduled just yet. Join the mailing list below and we'll tell you
+                when the next one is announced.
+            </p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if past_meetups %}
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-xl font-bold text-gray-900 mb-5">Past meetups</h2>
+            <div class="grid gap-5 md:grid-cols-2">
+                {% for meetup in past_meetups %}
+                    {% include "meetups/includes/_meetup_card.html" with meetup=meetup show_city=True %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if chapters %}
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-xl font-bold text-gray-900 mb-5">City chapters</h2>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {% for chapter in chapters %}
+                <a href="{% pageurl chapter %}"
+                   class="block bg-white rounded-xl border border-gray-200 p-5 hover:border-teal-400 transition-colors">
+                    <h3 class="font-semibold text-gray-900">{{ chapter.specific.city|default:chapter.title }}</h3>
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ chapter.specific.meetups.published.count }} meetup{{ chapter.specific.meetups.published.count|pluralize }}
+                    </p>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if page.show_newsletter_signup %}
+    {% include "meetups/includes/_conversion_cta.html" with heading=page.newsletter_heading blurb=page.newsletter_blurb %}
+    {% endif %}
+
+</div>
+{% endblock %}

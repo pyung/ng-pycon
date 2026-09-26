@@ -1,0 +1,17 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ speaker_name }},
+
+We loved "{{ talk_title }}" at {{ meetup_title }}, and we think it belongs at
+PyCon Nigeria {{ conference_year }}.
+
+We have started a proposal for you with the details we already had from the
+{{ meetup_city }} meetup. It is saved as a draft, so nothing is submitted yet —
+have a look, choose a track and a length, and submit it when you are happy.
+
+Finish your proposal here:
+{{ proposal_url }}
+
+If you would rather not submit it, just leave the draft alone and nothing happens.
+
+Best regards,
+PyCon Nigeria Team
+{% endblock %}

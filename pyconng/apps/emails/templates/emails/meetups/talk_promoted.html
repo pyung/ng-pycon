@@ -1,0 +1,24 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your meetup talk, at the conference{% endblock %}
+{% block content %}
+  <p>Hi {{ speaker_name }},</p>
+  <p>
+    We loved <strong>{{ talk_title }}</strong> at {{ meetup_title }}, and we think it
+    belongs at PyCon Nigeria {{ conference_year }}.
+  </p>
+  <p>
+    We have started a proposal for you with the details we already had from the
+    {{ meetup_city }} meetup. It is saved as a draft, so nothing is submitted yet —
+    have a look, choose a track and a length, and submit it when you are happy.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ proposal_url }}"
+       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
+      Finish my proposal
+    </a>
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    If you would rather not submit it, just leave the draft alone and nothing happens.
+  </p>
+  <p>Best regards,<br>PyCon Nigeria Team</p>
+{% endblock %}

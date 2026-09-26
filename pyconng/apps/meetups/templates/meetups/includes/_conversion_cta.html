@@ -1,0 +1,85 @@
+{% comment %}
+  Conversion hook: turn a meetup visitor into a conference attendee.
+
+  Carries its own form and handler rather than reusing the site's newsletter
+  form. Two reasons: the shared handler in pyconng.js binds by the element id
+  "newsletter-form" and writes into a global "#newsletter-message", so a second
+  copy on the page would collide with it; and the footer form is gated on a
+  `newsletter_title` context variable that nothing currently sets.
+
+  Posts JSON, which is what home.views.NewsletterSignupView expects.
+{% endcomment %}
+<section class="px-4 pb-16">
+    <div class="max-w-5xl mx-auto">
+        <div class="rounded-2xl bg-gray-900 px-6 py-10 text-center">
+            <h2 class="text-2xl font-bold text-white">{{ heading|default:"Get early-bird access" }}</h2>
+            <p class="mt-3 text-gray-300 max-w-xl mx-auto">
+                {{ blurb|default:"Join the mailing list for conference announcements and early-bird tickets." }}
+            </p>
+
+            <form id="meetup-newsletter-form" class="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+                  action="{% url 'newsletter_signup' %}" method="post" novalidate>
+                {% csrf_token %}
+                <label for="meetup-newsletter-email" class="sr-only">Email address</label>
+                <input type="email" name="email" id="meetup-newsletter-email" required
+                       placeholder="you@example.com" autocomplete="email"
+                       class="flex-1 px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <button type="submit"
+                        class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                    Join the mailing list
+                </button>
+            </form>
+            <p id="meetup-newsletter-message" class="mt-3 text-sm" role="status" aria-live="polite"></p>
+
+            <p class="mt-4">
+                <a href="/tickets/" class="text-teal-400 hover:text-teal-300 font-semibold underline">
+                    See ticket options
+                </a>
+            </p>
+        </div>
+    </div>
+</section>
+
+<script>
+(function () {
+  var form = document.getElementById('meetup-newsletter-form');
+  if (!form) return;
+  var message = document.getElementById('meetup-newsletter-message');
+  var input = document.getElementById('meetup-newsletter-email');
+
+  function say(text, ok) {
+    if (!message) return;
+    message.textContent = text;
+    message.className = 'mt-3 text-sm ' + (ok ? 'text-teal-300' : 'text-red-300');
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var email = (input.value || '').trim();
+    if (!email) { say('Please enter an email address.', false); return; }
+
+    var button = form.querySelector('[type="submit"]');
+    var original = button.textContent;
+    button.textContent = 'Joining…';
+    button.disabled = true;
+    say('', true);
+
+    var token = form.querySelector('[name="csrfmiddlewaretoken"]');
+    fetch(form.action, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': token ? token.value : ''
+      },
+      body: JSON.stringify({ email: email })
+    })
+      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+      .then(function (result) {
+        say(result.data.message || (result.ok ? 'You are on the list.' : 'That did not work.'), result.data.success);
+        if (result.data.success) { form.reset(); }
+      })
+      .catch(function () { say('Could not reach the server. Please try again.', false); })
+      .finally(function () { button.textContent = original; button.disabled = false; });
+  });
+})();
+</script>
