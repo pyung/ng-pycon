@@ -31,12 +31,12 @@ class TrackAdmin(admin.ModelAdmin):
 @admin.register(Speaker)
 class SpeakerAdmin(admin.ModelAdmin):
     list_display = [
-        "full_name", "email", "country", "first_time_speaker",
+        "full_name", "user", "country", "first_time_speaker",
         "conference_year", "created_at",
     ]
     list_filter = ["conference_year", "first_time_speaker", "country"]
-    search_fields = ["full_name", "email", "organisation"]
-    readonly_fields = ["access_token", "created_at", "updated_at"]
+    search_fields = ["full_name", "user__email", "organisation"]
+    readonly_fields = ["created_at", "updated_at"]
 
 
 @admin.register(Proposal)
@@ -46,7 +46,7 @@ class ProposalAdmin(admin.ModelAdmin):
         "status", "conference_year", "submitted_at",
     ]
     list_filter = ["status", "conference_year", "format", "audience_level", "track"]
-    search_fields = ["title", "speaker__full_name", "speaker__email"]
+    search_fields = ["title", "speaker__full_name", "speaker__user__email"]
     readonly_fields = ["id", "created_at", "updated_at", "submitted_at"]
     ordering = ["-submitted_at"]
 

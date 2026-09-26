@@ -148,18 +148,14 @@ def _derived(user, year):
     ).exists():
         found.add(Role.ATTENDEE)
 
-    # A speaker is someone with an accepted or confirmed proposal. cfp.Speaker
-    # has no foreign key to User yet, so this bridges on email address. Replace
-    # the join below once Speaker is linked to an account properly -- an empty
-    # user email must never match, hence the guard.
-    if user.email:
-        from cfp.models import Proposal
-        if Proposal.objects.filter(
-            speaker__email__iexact=user.email,
-            conference_year=year,
-            status__in=(Proposal.STATUS_ACCEPTED, Proposal.STATUS_CONFIRMED),
-        ).exists():
-            found.add(Role.SPEAKER)
+    # A speaker is someone with an accepted or confirmed proposal this edition.
+    from cfp.models import Proposal
+    if Proposal.objects.filter(
+        speaker__user=user,
+        conference_year=year,
+        status__in=(Proposal.STATUS_ACCEPTED, Proposal.STATUS_CONFIRMED),
+    ).exists():
+        found.add(Role.SPEAKER)
 
     from grants.models import TravelGrantApplication
     if (

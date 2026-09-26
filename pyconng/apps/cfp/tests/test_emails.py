@@ -1,35 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings, RequestFactory
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
-class CfpAccessLinkEmailTests(TestCase):
-    def setUp(self):
-        mail.outbox = []
-        from cfp.models import Speaker
-        self.speaker = Speaker.objects.create(
-            email="ada@example.com",
-            full_name="Ada Lovelace",
-            bio="Bio",
-            country="NG",
-            conference_year=2026,
-        )
-
-    def test_send_access_link_uses_helper(self):
-        from cfp.services import CFPService
-        request = RequestFactory().get("/cfp/")
-        CFPService.send_access_link(self.speaker, request=request)
-
-        self.assertEqual(len(mail.outbox), 1)
-        msg = mail.outbox[0]
-        self.assertEqual(msg.to, ["ada@example.com"])
-        self.assertIn("Access Link", msg.subject)
-        self.assertEqual(len(msg.alternatives), 1)
-        html, mimetype = msg.alternatives[0]
-        self.assertEqual(mimetype, "text/html")
-        self.assertIn("Ada Lovelace", html)
-        self.assertIn("Manage my proposals", html)
-        self.assertEqual(msg.tags, ["cfp", "access_link"])
+def _make_user(email="ada@example.com"):
+    """A speaker profile needs an owning account; its email is the account's."""
+    return get_user_model().objects.create_user(
+        username="ada", email=email, password="x",
+    )
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
@@ -37,8 +15,9 @@ class CfpSubmissionConfirmationEmailTests(TestCase):
     def setUp(self):
         mail.outbox = []
         from cfp.models import Speaker, Proposal, Track
+        self.user = _make_user()
         self.speaker = Speaker.objects.create(
-            email="ada@example.com", full_name="Ada Lovelace",
+            user=self.user, full_name="Ada Lovelace",
             bio="Bio", country="NG", conference_year=2026,
         )
         self.track = Track.objects.create(name="Web", conference_year=2026)
@@ -75,8 +54,9 @@ class CfpDecisionEmailTests(TestCase):
     def setUp(self):
         mail.outbox = []
         from cfp.models import Speaker, Proposal, Track, EmailTemplate
+        self.user = _make_user()
         self.speaker = Speaker.objects.create(
-            email="ada@example.com", full_name="Ada Lovelace",
+            user=self.user, full_name="Ada Lovelace",
             bio="Bio", country="NG", conference_year=2026,
         )
         self.track = Track.objects.create(name="Web", conference_year=2026)

@@ -96,32 +96,55 @@ class Track(models.Model):
 
 
 # ---------------------------------------------------------------------------
-# Speaker (token-based light auth)
+# Speaker
 # ---------------------------------------------------------------------------
 
 class Speaker(models.Model):
     """
-    Speaker profile.  Access is via a unique UUID token sent by email –
-    no Django account required.
+    A person's speaker profile for one edition.
+
+    Owned by a Django account, so proposals hang off the same identity that
+    holds their ticket, grant application and visa request -- one person, one
+    account, asked for their details once.
+
+    The profile is per-edition rather than per-person because a bio,
+    organisation and country legitimately change between one year and the next,
+    and a past programme should keep the text as it was published.
     """
 
-    email = models.EmailField()
-    full_name = models.CharField(max_length=200)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="speaker_profiles",
+    )
+    full_name = models.CharField(
+        max_length=200,
+        help_text="Name as it should appear in the programme",
+    )
     bio = RichTextField(help_text="Speaker biography")
     organisation = models.CharField(max_length=200, blank=True)
     country = models.CharField(max_length=100)
     first_time_speaker = models.BooleanField(default=False)
-    access_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     conference_year = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ["email", "conference_year"]
+        unique_together = ["user", "conference_year"]
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
+
+    @property
+    def email(self):
+        """
+        The account's email address -- the single source of truth.
+
+        A property rather than a column so there is no second copy to drift.
+        Query it through the relation (``speaker__user__email``), not directly.
+        """
+        return self.user.email
 
 
 # ---------------------------------------------------------------------------

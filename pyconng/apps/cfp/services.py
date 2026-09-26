@@ -59,16 +59,16 @@ class CFPService:
 
     @staticmethod
     def get_or_create_speaker(
-        email,
+        user,
         full_name,
         bio,
         organisation="",
         country="",
         first_time_speaker=False,
     ):
-        """Get or create a Speaker record for the current year."""
+        """Create or update this user's speaker profile for the current year."""
         speaker, created = Speaker.objects.get_or_create(
-            email=email,
+            user=user,
             conference_year=CURRENT_YEAR,
             defaults={
                 "full_name": full_name,
@@ -88,30 +88,13 @@ class CFPService:
         return speaker
 
     @staticmethod
-    def get_speaker_from_session(request):
-        """Return the Speaker stored in the current session, or None."""
-        speaker_id = request.session.get("cfp_speaker_id")
-        if speaker_id:
-            try:
-                return Speaker.objects.get(pk=speaker_id, conference_year=CURRENT_YEAR)
-            except Speaker.DoesNotExist:
-                pass
-        return None
-
-    @staticmethod
-    def authenticate_speaker(request, token):
-        """
-        Validate a speaker access token.
-        On success, store the speaker ID in the session and return the Speaker.
-        """
-        try:
-            speaker = Speaker.objects.get(
-                access_token=token, conference_year=CURRENT_YEAR,
-            )
-            request.session["cfp_speaker_id"] = speaker.pk
-            return speaker
-        except Speaker.DoesNotExist:
+    def get_speaker_for_user(user, conference_year=None):
+        """This user's speaker profile for an edition, or None."""
+        if not user or not user.is_authenticated:
             return None
+        return Speaker.objects.filter(
+            user=user, conference_year=conference_year or CURRENT_YEAR,
+        ).first()
 
     # ------------------------------------------------------------------
     # Snapshot & audit helpers
@@ -244,28 +227,6 @@ class CFPService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def send_access_link(speaker, request=None):
-        from emails.services import send_email
-
-        base_url = ""
-        if request:
-            base_url = f"{request.scheme}://{request.get_host()}"
-        access_url = f"{base_url}/cfp/mine/?token={speaker.access_token}"
-
-        send_email(
-            template="cfp/access_link",
-            to=[speaker.email],
-            subject="PyCon Nigeria CFP – Your Proposal Access Link",
-            context={
-                "speaker_name": speaker.full_name,
-                "conference_year": speaker.conference_year,
-                "access_url": access_url,
-            },
-            tags=["cfp", "access_link"],
-            fail_silently=True,
-        )
-
-    @staticmethod
     def send_submission_confirmation(proposal, request=None):
         from emails.services import send_email
 
@@ -273,9 +234,7 @@ class CFPService:
         base_url = ""
         if request:
             base_url = f"{request.scheme}://{request.get_host()}"
-        proposal_url = (
-            f"{base_url}/cfp/proposal/{proposal.id}/?token={speaker.access_token}"
-        )
+        proposal_url = f"{base_url}/cfp/proposal/{proposal.id}/"
 
         send_email(
             template="cfp/submission_confirmation",

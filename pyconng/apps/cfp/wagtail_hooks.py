@@ -39,11 +39,11 @@ class SpeakerAdmin(ModelAdmin):
     menu_icon = "user"
     menu_order = 300
     list_display = [
-        "full_name", "email", "country", "first_time_speaker",
+        "full_name", "user", "country", "first_time_speaker",
         "conference_year",
     ]
     list_filter = ["conference_year", "first_time_speaker"]
-    search_fields = ["full_name", "email"]
+    search_fields = ["full_name", "user__email"]
 
 
 class ProposalAdmin(ModelAdmin):
@@ -56,7 +56,7 @@ class ProposalAdmin(ModelAdmin):
         "conference_year", "submitted_at",
     ]
     list_filter = ["status", "conference_year", "format", "track"]
-    search_fields = ["title", "speaker__full_name", "speaker__email"]
+    search_fields = ["title", "speaker__full_name", "speaker__user__email"]
 
 
 class ReviewerAssignmentAdmin(ModelAdmin):

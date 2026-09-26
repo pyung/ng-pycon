@@ -54,22 +54,25 @@ class GrantService:
 
     @staticmethod
     def get_user_cfp_info(user):
-        """Check if user has submitted a CFP (by email) and return status."""
-        if not user.is_authenticated or not user.email:
+        """Whether this user has a proposal this year, and its latest status."""
+        if not user.is_authenticated:
             return None
-        try:
-            from cfp.models import Speaker, Proposal
-            speaker = Speaker.objects.get(
-                email=user.email, conference_year=CURRENT_YEAR,
-            )
-            proposals = Proposal.objects.filter(speaker=speaker).order_by("-submitted_at")
-            if proposals.exists():
-                latest = proposals.first()
-                status_display = latest.get_status_display()
-                return {"submitted": True, "status": latest.status, "status_display": status_display}
+
+        from cfp.models import Proposal
+
+        latest = (
+            Proposal.objects
+            .filter(speaker__user=user, conference_year=CURRENT_YEAR)
+            .order_by("-submitted_at")
+            .first()
+        )
+        if latest is None:
             return {"submitted": False, "status": None, "status_display": None}
-        except Exception:
-            return {"submitted": False, "status": None, "status_display": None}
+        return {
+            "submitted": True,
+            "status": latest.status,
+            "status_display": latest.get_status_display(),
+        }
 
     # ------------------------------------------------------------------
     # Admin / Reviewer helpers

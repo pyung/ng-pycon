@@ -10,9 +10,6 @@ urlpatterns = [
     path("submit/", views.cfp_submit, name="submit"),
     path("closed/", views.cfp_closed, name="closed"),
 
-    # --- Speaker access ---------------------------------------------------
-    path("access/", views.cfp_access, name="access"),
-
     # --- Speaker proposal management -------------------------------------
     path("mine/", views.cfp_my_proposals, name="my_proposals"),
     path(

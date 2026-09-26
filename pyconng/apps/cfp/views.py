@@ -1,8 +1,8 @@
 """
 CFP views – organised by audience:
 
-    Public       – landing, submit, closed
-    Speaker      – access, my_proposals, proposal CRUD
+    Public       – landing, closed
+    Speaker      – submit, my_proposals, proposal CRUD (all require an account)
     Reviewer     – review_list, review_detail, review_score, review_conflict
     Chair / Admin – dashboard, assign, decisions, export, email
 """
@@ -10,6 +10,7 @@ CFP views – organised by audience:
 import logging
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -31,7 +32,6 @@ from .forms import (
     BulkEmailForm,
     ProposalForm,
     ReviewForm,
-    SpeakerAccessForm,
     SpeakerForm,
 )
 from .models import (
@@ -39,7 +39,6 @@ from .models import (
     Proposal,
     Review,
     ReviewerAssignment,
-    Speaker,
     Track,
 )
 from .services import CFPService
@@ -66,31 +65,31 @@ def cfp_landing(request):
 
 
 @cfp_open_required
+@login_required
 def cfp_submit(request):
     """Proposal submission form (GET = blank form, POST = create)."""
     cfp = CFPService.get_current_cfp()
 
-    # Pre-fill speaker form if returning speaker is in session
-    speaker = CFPService.get_speaker_from_session(request)
-    speaker_initial = {}
+    # Prefill from an existing profile for this edition, else from the account
+    speaker = CFPService.get_speaker_for_user(request.user)
     if speaker:
         speaker_initial = {
             "full_name": speaker.full_name,
-            "email": speaker.email,
             "bio": speaker.bio,
             "organisation": speaker.organisation,
             "country": speaker.country,
             "first_time_speaker": speaker.first_time_speaker,
         }
+    else:
+        speaker_initial = {"full_name": request.user.get_full_name()}
 
     if request.method == "POST":
         speaker_form = SpeakerForm(request.POST)
         proposal_form = ProposalForm(request.POST, cfp_settings=cfp)
 
         if speaker_form.is_valid() and proposal_form.is_valid():
-            # Get or create speaker
             sp = CFPService.get_or_create_speaker(
-                email=speaker_form.cleaned_data["email"],
+                user=request.user,
                 full_name=speaker_form.cleaned_data["full_name"],
                 bio=speaker_form.cleaned_data["bio"],
                 organisation=speaker_form.cleaned_data.get("organisation", ""),
@@ -99,9 +98,6 @@ def cfp_submit(request):
                     "first_time_speaker", False,
                 ),
             )
-
-            # Store speaker in session
-            request.session["cfp_speaker_id"] = sp.pk
 
             # Build proposal
             proposal = proposal_form.save(commit=False)
@@ -126,11 +122,10 @@ def cfp_submit(request):
                     actor=sp.email,
                 )
                 CFPService.send_submission_confirmation(proposal, request)
-                CFPService.send_access_link(sp, request)
                 messages.success(
                     request,
-                    "Your proposal has been submitted! "
-                    "Check your email for an access link to manage it.",
+                    "Your proposal has been submitted. "
+                    "You can manage it any time under My Proposals.",
                 )
             else:
                 CFPService.log_action(
@@ -139,11 +134,9 @@ def cfp_submit(request):
                     new_status=Proposal.STATUS_DRAFT,
                     actor=sp.email,
                 )
-                CFPService.send_access_link(sp, request)
                 messages.success(
                     request,
-                    "Draft saved. Check your email for an access link. "
-                    "Remember to submit before the deadline!",
+                    "Draft saved. Remember to submit before the deadline.",
                 )
 
             return redirect("cfp:proposal_detail", proposal_id=proposal.pk)
@@ -169,49 +162,15 @@ def cfp_closed(request):
 
 
 # ======================================================================
-# SPEAKER (TOKEN-BASED AUTH) VIEWS
+# SPEAKER VIEWS (account required)
 # ======================================================================
-
-def cfp_access(request):
-    """
-    Speaker enters their email to receive an access link.
-    """
-    if request.method == "POST":
-        form = SpeakerAccessForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data["email"]
-            try:
-                speaker = Speaker.objects.get(
-                    email=email, conference_year=CURRENT_YEAR,
-                )
-                CFPService.send_access_link(speaker, request)
-                messages.success(
-                    request,
-                    "Access link sent! Check your email.",
-                )
-            except Speaker.DoesNotExist:
-                # Don't reveal whether the email exists
-                messages.success(
-                    request,
-                    "If you've submitted a proposal with this email, "
-                    "you'll receive an access link shortly.",
-                )
-            return redirect("cfp:access")
-    else:
-        form = SpeakerAccessForm()
-
-    return render(request, "cfp/access.html", {
-        "form": form,
-        "conference_year": CURRENT_YEAR,
-    })
-
 
 @speaker_required
 def cfp_my_proposals(request):
     """List the current speaker's proposals."""
     speaker = request.cfp_speaker
     proposals = Proposal.objects.filter(
-        speaker=speaker, conference_year=CURRENT_YEAR,
+        speaker__user=request.user, conference_year=CURRENT_YEAR,
     ).order_by("-created_at")
 
     return render(request, "cfp/my_proposals.html", {
@@ -256,8 +215,8 @@ def cfp_proposal_edit(request, proposal_id):
         )
 
         if speaker_form.is_valid() and proposal_form.is_valid():
-            # Update speaker info
-            speaker = request.cfp_speaker
+            # Update the profile this proposal was submitted under
+            speaker = proposal.speaker
             speaker.full_name = speaker_form.cleaned_data["full_name"]
             speaker.bio = speaker_form.cleaned_data["bio"]
             speaker.organisation = speaker_form.cleaned_data.get("organisation", "")
@@ -288,10 +247,9 @@ def cfp_proposal_edit(request, proposal_id):
 
             return redirect("cfp:proposal_detail", proposal_id=proposal.pk)
     else:
-        speaker = request.cfp_speaker
+        speaker = proposal.speaker
         speaker_form = SpeakerForm(initial={
             "full_name": speaker.full_name,
-            "email": speaker.email,
             "bio": speaker.bio,
             "organisation": speaker.organisation,
             "country": speaker.country,
@@ -323,7 +281,7 @@ def cfp_proposal_withdraw(request, proposal_id):
         messages.error(request, "Proposals cannot be withdrawn after the CFP closes.")
         return redirect("cfp:proposal_detail", proposal_id=proposal.pk)
 
-    CFPService.withdraw_proposal(proposal, actor_email=request.cfp_speaker.email)
+    CFPService.withdraw_proposal(proposal, actor_email=request.user.email)
     messages.success(request, "Your proposal has been withdrawn.")
     return redirect("cfp:my_proposals")
 
@@ -350,7 +308,7 @@ def cfp_proposal_confirm(request, proposal_id):
         messages.error(request, "Only accepted proposals can be confirmed.")
         return redirect("cfp:proposal_detail", proposal_id=proposal.pk)
 
-    CFPService.confirm_proposal(proposal, actor_email=request.cfp_speaker.email)
+    CFPService.confirm_proposal(proposal, actor_email=request.user.email)
     messages.success(
         request,
         "Thank you for confirming! We look forward to your talk.",

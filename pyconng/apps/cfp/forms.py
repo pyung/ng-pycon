@@ -32,17 +32,16 @@ TAILWIND_CHECKBOX = (
 # ---------------------------------------------------------------------------
 
 class SpeakerForm(forms.Form):
+    """
+    Speaker details for one edition. The email address is not collected here --
+    it comes from the signed-in account, so there is only one copy of it.
+    """
+
     full_name = forms.CharField(
         max_length=200,
         widget=forms.TextInput(attrs={
             "class": TAILWIND_INPUT,
             "placeholder": "Full name",
-        }),
-    )
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={
-            "class": TAILWIND_INPUT,
-            "placeholder": "you@example.com",
         }),
     )
     bio = forms.CharField(
@@ -147,19 +146,6 @@ class ProposalForm(forms.ModelForm):
             choices=[(d, f"{d} minutes") for d in sorted(durations)],
             widget=forms.Select(attrs={"class": TAILWIND_SELECT}),
         )
-
-
-# ---------------------------------------------------------------------------
-# Access form (speaker enters email to get access link)
-# ---------------------------------------------------------------------------
-
-class SpeakerAccessForm(forms.Form):
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={
-            "class": TAILWIND_INPUT,
-            "placeholder": "Enter the email you used to submit",
-        }),
-    )
 
 
 # ---------------------------------------------------------------------------

@@ -82,9 +82,9 @@
                         {% if cfp_info and cfp_info.submitted %}
                             <p class="text-sm text-gray-500 mb-2">Status: <span class="font-medium text-gray-700">{{ cfp_info.status_display }}</span></p>
                             <p class="text-sm text-gray-500 mb-4">You have submitted a proposal</p>
-                            <a href="{% url 'cfp:access' %}"
+                            <a href="{% url 'cfp:my_proposals' %}"
                                class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                                Request Access Link
+                                Manage my proposals
                             </a>
                         {% elif cfp_open %}
                             <p class="text-sm text-gray-500 mb-4">Submit a talk, workshop or tutorial</p>
