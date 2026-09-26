@@ -272,7 +272,10 @@ class Proposal(models.Model):
 
 
 # ---------------------------------------------------------------------------
-# Proposal Snapshots & Audit Trail
+# Proposal Snapshots
+#
+# The audit trail lives in the shared ``audit`` app, so "who approved what" has
+# one answer across proposals, grants, payments and roles.
 # ---------------------------------------------------------------------------
 
 class ProposalSnapshot(models.Model):
@@ -292,29 +295,6 @@ class ProposalSnapshot(models.Model):
 
     def __str__(self):
         return f"Snapshot of '{self.proposal.title}' ({self.snapshot_type})"
-
-
-class ProposalAuditLog(models.Model):
-    """Timestamped audit trail for every proposal action."""
-
-    proposal = models.ForeignKey(
-        Proposal, on_delete=models.CASCADE, related_name="audit_logs",
-    )
-    action = models.CharField(max_length=100)
-    old_status = models.CharField(max_length=20, blank=True)
-    new_status = models.CharField(max_length=20, blank=True)
-    actor = models.CharField(
-        max_length=200,
-        help_text="Email or username of the person who performed the action",
-    )
-    note = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.proposal.title}: {self.action}"
 
 
 # ---------------------------------------------------------------------------
@@ -370,44 +350,3 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review of '{self.assignment.proposal.title}' by {self.assignment.reviewer}"
-
-
-# ---------------------------------------------------------------------------
-# Email Templates
-# ---------------------------------------------------------------------------
-
-class EmailTemplate(models.Model):
-    """Customisable email templates for acceptance / rejection / waitlist."""
-
-    TYPE_ACCEPTANCE = "acceptance"
-    TYPE_REJECTION = "rejection"
-    TYPE_WAITLIST = "waitlist"
-
-    TYPE_CHOICES = [
-        (TYPE_ACCEPTANCE, "Acceptance"),
-        (TYPE_REJECTION, "Rejection"),
-        (TYPE_WAITLIST, "Waitlist"),
-    ]
-
-    name = models.CharField(max_length=100)
-    subject = models.CharField(max_length=200)
-    body = models.TextField(
-        help_text=(
-            "Use {speaker_name}, {proposal_title}, {conference_year} "
-            "as placeholders"
-        ),
-    )
-    template_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    conference_year = models.IntegerField(validators=[validate_edition_year])
-
-    class Meta:
-        unique_together = ["template_type", "conference_year"]
-
-    def __str__(self):
-        return f"{self.name} ({self.conference_year})"
-
-    def render(self, context):
-        """Replace placeholders with context values and return (subject, body)."""
-        subject = self.subject.format(**context)
-        body = self.body.format(**context)
-        return subject, body

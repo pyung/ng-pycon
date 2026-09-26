@@ -63,3 +63,31 @@ class RoleAssignment(models.Model):
         who = self.user.get_full_name() or self.user.email or self.user.username
         when = self.conference_year or "all editions"
         return f"{who} - {Role(self.role).label} ({when})"
+
+    def save(self, *args, **kwargs):
+        """Record grants and revocations, so who conferred what is answerable."""
+        from audit.services import record
+
+        previous = None
+        if self.pk:
+            previous = RoleAssignment.objects.filter(pk=self.pk).values("is_active").first()
+
+        super().save(*args, **kwargs)
+
+        was_active = previous["is_active"] if previous else None
+        if was_active is None:
+            action = "Granted role"
+        elif was_active != self.is_active:
+            action = "Restored role" if self.is_active else "Revoked role"
+        else:
+            return  # nothing about the grant itself changed
+
+        record(
+            target=self,
+            action=action,
+            actor=self.granted_by,
+            old_value="" if was_active is None else ("active" if was_active else "revoked"),
+            new_value="active" if self.is_active else "revoked",
+            note=f"{Role(self.role).label} for {self.user.email or self.user.username}",
+            conference_year=self.conference_year,
+        )

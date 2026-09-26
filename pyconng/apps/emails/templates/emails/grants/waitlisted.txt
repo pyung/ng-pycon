@@ -1,0 +1,16 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+Your travel grant application for PyCon Nigeria {{ conference_year }} is on the
+waitlist. We had more strong applications than budget, and yours was close.
+
+Grants do get released when recipients decline or their plans change, so we may
+still be able to fund you. We will tell you either way in good time.
+
+View your application here:
+{{ dashboard_url }}
+
+Please do not book non-refundable travel on the strength of this email.
+
+Thank you for applying,
+PyCon Nigeria Team
+{% endblock %}

@@ -6,7 +6,6 @@ from wagtail_modeladmin.options import (
 
 from .models import (
     CFPSettings,
-    EmailTemplate,
     Proposal,
     ReviewerAssignment,
     Speaker,
@@ -68,15 +67,6 @@ class ReviewerAssignmentAdmin(ModelAdmin):
     list_filter = ["has_conflict"]
 
 
-class EmailTemplateAdmin(ModelAdmin):
-    model = EmailTemplate
-    menu_label = "Email Templates"
-    menu_icon = "mail"
-    menu_order = 700
-    list_display = ["name", "template_type", "conference_year"]
-    list_filter = ["template_type", "conference_year"]
-
-
 class CFPAdminGroup(ModelAdminGroup):
     menu_label = "CFP"
     menu_icon = "openquote"
@@ -87,7 +77,6 @@ class CFPAdminGroup(ModelAdminGroup):
         SpeakerAdmin,
         ProposalAdmin,
         ReviewerAssignmentAdmin,
-        EmailTemplateAdmin,
     )
 
 

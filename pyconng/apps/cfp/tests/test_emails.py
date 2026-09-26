@@ -53,7 +53,8 @@ class CfpSubmissionConfirmationEmailTests(TestCase):
 class CfpDecisionEmailTests(TestCase):
     def setUp(self):
         mail.outbox = []
-        from cfp.models import Speaker, Proposal, Track, EmailTemplate
+        from cfp.models import Speaker, Proposal, Track
+        from emails.models import EmailTemplate
         self.user = _make_user()
         self.speaker = Speaker.objects.create(
             user=self.user, full_name="Ada Lovelace",
@@ -68,8 +69,7 @@ class CfpDecisionEmailTests(TestCase):
             conference_year=2026,
         )
         EmailTemplate.objects.create(
-            name="Acceptance 2026",
-            template_type=EmailTemplate.TYPE_ACCEPTANCE,
+            key="cfp/accepted",
             conference_year=2026,
             subject="Accepted: {proposal_title}",
             body="Hi {speaker_name}, your proposal {proposal_title} was accepted.",

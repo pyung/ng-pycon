@@ -80,7 +80,7 @@ class MeetupService:
             proposal,
             "Promoted from meetup talk",
             new_status=Proposal.STATUS_DRAFT,
-            actor=getattr(actor, "email", "system"),
+            actor=actor,
             note=f"{talk.meetup.title} ({talk.meetup.city})",
         )
 

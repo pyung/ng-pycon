@@ -193,7 +193,7 @@ class TicketTransferForm(forms.Form):
 
         # Notify the new owner
         ticket_type = ticket_sale.ticket_type_name
-        from emails.services import send_email
+        from emails.services import send_email, site_url
 
         send_email(
             template="tickets/transfer",
@@ -202,7 +202,7 @@ class TicketTransferForm(forms.Form):
             context={
                 "old_owner_email": old_owner.email,
                 "ticket_type": ticket_type,
-                "dashboard_url": "https://pycon.ng/tickets/",
+                "dashboard_url": f"{site_url()}/tickets/",
             },
             tags=["tickets", "transfer"],
             fail_silently=True,

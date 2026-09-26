@@ -1,0 +1,7 @@
+{% extends "emails/_base.html" %}
+{% comment %}
+  Wrapper for admin-edited copy. The body is plain text, so it is escaped and
+  turned into paragraphs here -- the branding stays ours, the words are theirs.
+{% endcomment %}
+{% block title %}{{ rendered_subject }}{% endblock %}
+{% block content %}{{ rendered_body|linebreaks }}{% endblock %}

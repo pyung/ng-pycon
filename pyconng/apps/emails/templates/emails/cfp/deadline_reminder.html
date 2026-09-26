@@ -1,0 +1,23 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your draft proposal is not submitted yet{% endblock %}
+{% block content %}
+  <p>Hi {{ speaker_name }},</p>
+  <p>
+    You have a draft proposal for PyCon Nigeria {{ conference_year }} that has not been
+    submitted yet: <strong>{{ proposal_title }}</strong>.
+  </p>
+  <p>
+    The call for proposals closes on <strong>{{ deadline }}</strong>. Drafts are not
+    reviewed, so it needs submitting before then to be considered.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ proposal_url }}"
+       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
+      Finish and submit
+    </a>
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    If you have decided not to submit it, you can ignore this — we will not chase you again.
+  </p>
+  <p>Best regards,<br>PyCon Nigeria Team</p>
+{% endblock %}

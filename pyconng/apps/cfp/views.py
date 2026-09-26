@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 from editions.current import current_year
 
 from accounts.decorators import role_required
+from audit.services import entries_for
 from accounts.roles import Role
 
 from .decorators import (
@@ -186,7 +187,7 @@ def cfp_my_proposals(request):
 def cfp_proposal_detail(request, proposal_id):
     """View a single proposal."""
     proposal = request.cfp_proposal
-    audit_logs = proposal.audit_logs.all()[:20]
+    audit_logs = entries_for(proposal, limit=20)
 
     return render(request, "cfp/proposal_detail.html", {
         "proposal": proposal,
@@ -508,6 +509,7 @@ def admin_decisions(request):
             proposal_ids,
             decision,
             actor_email=request.user.email,
+            actor=request.user,
         )
         messages.success(
             request,

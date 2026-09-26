@@ -243,7 +243,7 @@ class Ticket(models.Model):
         self._send_purchase_confirmation_email()
 
     def _send_purchase_confirmation_email(self):
-        from emails.services import send_email
+        from emails.services import send_email, site_url
 
         self.refresh_from_db()
         if not self.user or not self.user.email:
@@ -258,9 +258,10 @@ class Ticket(models.Model):
                 "ticket_type": ticket_type_name,
                 "quantity": self.quantity,
                 "order_code": self.order,
-                "dashboard_url": "https://pycon.ng/tickets/",
+                "dashboard_url": f"{site_url()}/tickets/",
             },
             tags=["tickets", "purchase"],
+            conference_year=self.conference_year,
             fail_silently=False,
         )
 

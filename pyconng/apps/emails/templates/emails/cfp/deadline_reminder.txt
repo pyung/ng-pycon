@@ -1,0 +1,17 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ speaker_name }},
+
+You have a draft proposal for PyCon Nigeria {{ conference_year }} that has not
+been submitted yet: "{{ proposal_title }}".
+
+The call for proposals closes on {{ deadline }}. Drafts are not reviewed, so it
+needs submitting before then to be considered.
+
+Finish and submit it here:
+{{ proposal_url }}
+
+If you have decided not to submit it, you can ignore this - we will not chase
+you again.
+
+Best regards,
+PyCon Nigeria Team
+{% endblock %}

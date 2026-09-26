@@ -1,0 +1,15 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+Your PyCon Nigeria {{ conference_year }} travel grant of {{ amount_paid }} has
+been sent.
+{% if reference %}
+Reference: {{ reference }}
+{% endif %}
+Please allow a few working days for it to reach your account. If it has not
+arrived after that, reply to this email and we will chase it.
+
+Keep your receipts - we may ask for them for our funding reports.
+
+See you there,
+PyCon Nigeria Team
+{% endblock %}

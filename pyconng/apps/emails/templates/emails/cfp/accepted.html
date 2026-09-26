@@ -1,0 +1,24 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your proposal was accepted{% endblock %}
+{% block content %}
+  <p>Hi {{ speaker_name }},</p>
+  <p>
+    We are delighted to tell you that <strong>{{ proposal_title }}</strong> has been
+    accepted for PyCon Nigeria {{ conference_year }}.
+  </p>
+  <p>
+    Please confirm you can still speak so we can put you in the programme. If we do not
+    hear from you we may have to offer the slot to someone on the waitlist.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ proposal_url }}"
+       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
+      Confirm my talk
+    </a>
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    Travelling to the conference? You may be eligible for a travel grant or a visa
+    invitation letter — both are linked from your dashboard.
+  </p>
+  <p>Congratulations, and thank you,<br>PyCon Nigeria Team</p>
+{% endblock %}

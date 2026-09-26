@@ -35,6 +35,9 @@ from .models import (
     TravelGrantReview,
 )
 from accounts.roles import Role, roles_for, users_with_role
+from audit.services import record
+
+from .emails import send_grant_payment_sent
 
 from .services import GrantService
 
@@ -328,7 +331,10 @@ def grant_admin_decisions(request):
                     approved_amounts[aid] = float(request.POST[key])
                 except (ValueError, TypeError):
                     pass
-        count = GrantService.bulk_decision(app_ids, decision, approved_amounts, request.user.email)
+        count = GrantService.bulk_decision(
+            app_ids, decision, approved_amounts,
+            actor_email=request.user.email, actor=request.user,
+        )
         messages.success(request, f"{count} application(s) updated.")
     else:
         messages.error(request, "Invalid decision data.")
@@ -388,6 +394,7 @@ def grant_finance_detail(request, application_id):
     if request.method == "POST":
         form = GrantPaymentForm(request.POST, request.FILES)
         if form.is_valid():
+            previous_payment_status = payment.payment_status
             payment.payment_status = form.cleaned_data["payment_status"]
             if form.cleaned_data.get("amount_paid"):
                 payment.amount_paid = form.cleaned_data["amount_paid"]
@@ -399,6 +406,22 @@ def grant_finance_detail(request, application_id):
             if form.cleaned_data.get("receipt"):
                 payment.receipt = form.cleaned_data["receipt"]
             payment.save()
+
+            if (
+                payment.payment_status == TravelGrantPayment.STATUS_PAID
+                and previous_payment_status != TravelGrantPayment.STATUS_PAID
+            ):
+                send_grant_payment_sent(application, payment)
+
+            record(
+                target=application,
+                action="Marked travel grant payment "
+                       f"{payment.get_payment_status_display().lower()}",
+                actor=request.user,
+                old_value=previous_payment_status,
+                new_value=payment.payment_status,
+                note=f"Amount: {payment.amount_paid} Reference: {payment.reference or '-'}",
+            )
             messages.success(request, "Payment record updated.")
             return redirect("grants:finance_list")
     else:

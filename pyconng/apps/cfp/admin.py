@@ -2,9 +2,7 @@ from django.contrib import admin
 
 from .models import (
     CFPSettings,
-    EmailTemplate,
     Proposal,
-    ProposalAuditLog,
     ProposalSnapshot,
     Review,
     ReviewerAssignment,
@@ -58,17 +56,6 @@ class ProposalSnapshotAdmin(admin.ModelAdmin):
     readonly_fields = ["proposal", "data", "snapshot_type", "created_at"]
 
 
-@admin.register(ProposalAuditLog)
-class ProposalAuditLogAdmin(admin.ModelAdmin):
-    list_display = ["proposal", "action", "old_status", "new_status", "actor", "created_at"]
-    list_filter = ["action", "new_status"]
-    readonly_fields = [
-        "proposal", "action", "old_status", "new_status",
-        "actor", "note", "created_at",
-    ]
-    ordering = ["-created_at"]
-
-
 @admin.register(ReviewerAssignment)
 class ReviewerAssignmentAdmin(admin.ModelAdmin):
     list_display = ["reviewer", "proposal", "assigned_at", "has_conflict"]
@@ -83,7 +70,3 @@ class ReviewAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at", "updated_at"]
 
 
-@admin.register(EmailTemplate)
-class EmailTemplateAdmin(admin.ModelAdmin):
-    list_display = ["name", "template_type", "conference_year", "subject"]
-    list_filter = ["template_type", "conference_year"]

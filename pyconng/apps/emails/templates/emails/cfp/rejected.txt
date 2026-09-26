@@ -1,0 +1,15 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ speaker_name }},
+
+Thank you for proposing "{{ proposal_title }}" for PyCon Nigeria
+{{ conference_year }}. We had far more good proposals than slots this year, and
+yours was not one we were able to fit into the programme.
+
+That is genuinely not a judgement on the work. We hope you will submit again
+next year, and we would love to see you at the conference either way.
+
+Our city meetups are always looking for speakers too, and they are a great
+place to give a talk a first outing.
+
+Thank you for taking the time,
+PyCon Nigeria Team
+{% endblock %}

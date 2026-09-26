@@ -1,0 +1,18 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your proposal is on the waitlist{% endblock %}
+{% block content %}
+  <p>Hi {{ speaker_name }},</p>
+  <p>
+    <strong>{{ proposal_title }}</strong> is on the waitlist for PyCon Nigeria
+    {{ conference_year }}. That means we liked it, but the programme is full.
+  </p>
+  <p>
+    Slots do open up when speakers withdraw, so there is a real chance we come back to
+    you. We will tell you either way before the conference — you do not need to do
+    anything now.
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    Please hold off on booking non-refundable travel on the strength of this email.
+  </p>
+  <p>Thank you for your patience,<br>PyCon Nigeria Team</p>
+{% endblock %}

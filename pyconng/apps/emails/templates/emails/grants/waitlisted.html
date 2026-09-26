@@ -1,0 +1,23 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your travel grant application is on the waitlist{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    Your travel grant application for PyCon Nigeria {{ conference_year }} is on the
+    waitlist. We had more strong applications than budget, and yours was close.
+  </p>
+  <p>
+    Grants do get released when recipients decline or their plans change, so we may
+    still be able to fund you. We will tell you either way in good time.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}"
+       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
+      View my application
+    </a>
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    Please do not book non-refundable travel on the strength of this email.
+  </p>
+  <p>Thank you for applying,<br>PyCon Nigeria Team</p>
+{% endblock %}

@@ -18,9 +18,7 @@ from editions.current import current_year
 
 from .models import (
     CFPSettings,
-    EmailTemplate,
     Proposal,
-    ProposalAuditLog,
     ProposalSnapshot,
     Review,
     Speaker,
@@ -127,12 +125,23 @@ class CFPService:
     def log_action(
         proposal, action, old_status="", new_status="", actor="system", note="",
     ):
-        return ProposalAuditLog.objects.create(
-            proposal=proposal,
+        """
+        Record a proposal action on the shared audit trail.
+
+        ``actor`` accepts either a user or a bare label (an email address, or
+        "system"), so every existing call site keeps working while the ones that
+        have a real account now link to it.
+        """
+        from audit.services import record
+
+        is_user = hasattr(actor, "pk")
+        return record(
+            target=proposal,
             action=action,
-            old_status=old_status,
-            new_status=new_status,
-            actor=actor,
+            actor=actor if is_user else None,
+            actor_label="" if is_user else str(actor or "system"),
+            old_value=old_status,
+            new_value=new_status,
             note=note,
         )
 
@@ -195,7 +204,7 @@ class CFPService:
 
     @staticmethod
     @transaction.atomic
-    def bulk_decision(proposal_ids, decision, actor_email="system"):
+    def bulk_decision(proposal_ids, decision, actor_email="system", actor=None):
         """Apply accept / reject / waitlist to a batch of proposals."""
         status_map = {
             "accept": Proposal.STATUS_ACCEPTED,
@@ -217,7 +226,7 @@ class CFPService:
                 f"{decision.title()}ed proposal",
                 old_status=old_status,
                 new_status=new_status,
-                actor=actor_email,
+                actor=actor if getattr(actor, "pk", None) else actor_email,
             )
             count += 1
         return count
@@ -230,10 +239,10 @@ class CFPService:
     def send_submission_confirmation(proposal, request=None):
         from emails.services import send_email
 
+        from emails.services import site_url
+
         speaker = proposal.speaker
-        base_url = ""
-        if request:
-            base_url = f"{request.scheme}://{request.get_host()}"
+        base_url = f"{request.scheme}://{request.get_host()}" if request else site_url()
         proposal_url = f"{base_url}/cfp/proposal/{proposal.id}/"
 
         send_email(
@@ -252,46 +261,63 @@ class CFPService:
             fail_silently=True,
         )
 
+    #: Decision type -> the email it sends. Each has a template on disk, and each
+    #: can be reworded in the admin by adding an EmailTemplate with that key.
+    DECISION_TEMPLATES = {
+        "acceptance": ("cfp/accepted", "Your PyCon Nigeria proposal was accepted"),
+        "rejection": ("cfp/rejected", "About your PyCon Nigeria proposal"),
+        "waitlist": ("cfp/waitlisted", "Your PyCon Nigeria proposal is on the waitlist"),
+    }
+
     @staticmethod
     def send_decision_emails(proposal_ids, template_type, conference_year=None):
-        from emails.services import send_email
+        """
+        Email a decision to each proposal's speaker.
+
+        The wording comes from the template on disk unless an organizer has
+        overridden it in the admin. It used to require a database row and send
+        nothing at all without one, which meant decisions reached nobody until
+        somebody remembered to create the template.
+        """
+        from emails.services import send_email, site_url
 
         year = conference_year or current_year()
-        try:
-            template = EmailTemplate.objects.get(
-                template_type=template_type, conference_year=year,
-            )
-        except EmailTemplate.DoesNotExist:
-            logger.warning(
-                "No email template found for type=%s year=%s", template_type, year,
-            )
+        chosen = CFPService.DECISION_TEMPLATES.get(template_type)
+        if chosen is None:
+            logger.error("Unknown decision email type %r", template_type)
             return 0
+        template_key, default_subject = chosen
 
         proposals = Proposal.objects.filter(id__in=proposal_ids).select_related(
-            "speaker", "track",
+            "speaker__user", "track",
         )
+        base = site_url()
         sent = 0
         for proposal in proposals:
-            context = {
-                "speaker_name": proposal.speaker.full_name,
-                "proposal_title": proposal.title,
-                "conference_year": str(proposal.conference_year),
-            }
+            recipient = proposal.speaker.email
+            if not recipient:
+                logger.warning("Proposal %s has no speaker email; skipped", proposal.pk)
+                continue
             try:
-                subject, body = template.render(context)
-                send_email(
-                    template="cfp/decision",
-                    to=[proposal.speaker.email],
-                    subject=subject,
-                    context={"rendered_subject": subject, "rendered_body": body},
+                delivered = send_email(
+                    template=template_key,
+                    to=[recipient],
+                    subject=default_subject,
+                    context={
+                        "speaker_name": proposal.speaker.full_name,
+                        "proposal_title": proposal.title,
+                        "conference_year": str(proposal.conference_year),
+                        "track_name": proposal.track.name if proposal.track else "",
+                        "proposal_url": f"{base}/cfp/proposal/{proposal.id}/",
+                    },
                     tags=["cfp", "decision", template_type],
+                    conference_year=year,
                     fail_silently=False,
                 )
-                sent += 1
-            except Exception as exc:
-                logger.error(
-                    "Failed to send email to %s: %s", proposal.speaker.email, exc,
-                )
+                if delivered:
+                    sent += 1
+            except Exception as exc:  # noqa: BLE001 - one bad address must not stop the batch
+                logger.error("Failed to send decision email to %s: %s", recipient, exc)
         return sent
 
     # ------------------------------------------------------------------

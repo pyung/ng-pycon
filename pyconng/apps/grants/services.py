@@ -150,8 +150,14 @@ class GrantService:
         send_grant_submission_confirmation(application)
 
     @staticmethod
-    def bulk_decision(application_ids, decision, approved_amounts=None, actor_email=""):
-        """Bulk approve / reject / waitlist. approved_amounts: {app_id: amount}."""
+    def bulk_decision(application_ids, decision, approved_amounts=None, actor_email="", actor=None):
+        """
+        Bulk approve / reject / waitlist. approved_amounts: {app_id: amount}.
+
+        Every decision is recorded on the audit trail -- this is the module the
+        audit requirement singles out, because these decisions move money.
+        """
+        from audit.services import record
         from .models import TravelGrantPayment
         from grants.emails import send_grant_decision
 
@@ -160,12 +166,19 @@ class GrantService:
             "reject": TravelGrantApplication.STATUS_NOT_SELECTED,
             "waitlist": TravelGrantApplication.STATUS_WAITLISTED,
         }
+        # Spelled out rather than derived: "waitlist" + "d" reads "Waitlistd".
+        action_labels = {
+            "approve": "Approved travel grant",
+            "reject": "Rejected travel grant",
+            "waitlist": "Waitlisted travel grant",
+        }
         new_status = status_map.get(decision)
         if not new_status:
             return 0
         approved_amounts = approved_amounts or {}
         count = 0
         for app in TravelGrantApplication.objects.filter(pk__in=application_ids):
+            previous_status = app.status
             app.status = new_status
             app.decision_at = timezone.now()
             if new_status == TravelGrantApplication.STATUS_APPROVED:
@@ -176,6 +189,21 @@ class GrantService:
                     defaults={"amount_paid": amount, "payment_status": TravelGrantPayment.STATUS_PENDING},
                 )
             app.save()
+
+            record(
+                target=app,
+                action=action_labels[decision],
+                actor=actor,
+                actor_label="" if getattr(actor, "pk", None) else (actor_email or "system"),
+                old_value=previous_status,
+                new_value=new_status,
+                note=(
+                    f"Amount: {app.approved_amount}"
+                    if new_status == TravelGrantApplication.STATUS_APPROVED
+                    else ""
+                ),
+            )
+
             send_grant_decision(app)
             count += 1
         return count

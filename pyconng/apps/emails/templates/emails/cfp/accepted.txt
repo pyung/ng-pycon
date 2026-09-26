@@ -1,0 +1,17 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ speaker_name }},
+
+We are delighted to tell you that "{{ proposal_title }}" has been accepted for
+PyCon Nigeria {{ conference_year }}.
+
+Please confirm you can still speak so we can put you in the programme. If we do
+not hear from you we may have to offer the slot to someone on the waitlist.
+
+Confirm your talk here:
+{{ proposal_url }}
+
+Travelling to the conference? You may be eligible for a travel grant or a visa
+invitation letter - both are linked from your dashboard.
+
+Congratulations, and thank you,
+PyCon Nigeria Team
+{% endblock %}
