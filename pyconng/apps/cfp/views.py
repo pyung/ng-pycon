@@ -17,10 +17,12 @@ from django.views.decorators.http import require_POST
 
 from pyconng.context_processors import CURRENT_YEAR
 
+from accounts.decorators import role_required
+from accounts.roles import Role
+
 from .decorators import (
     cfp_open_required,
     proposal_owner_required,
-    role_required,
     speaker_required,
 )
 from .forms import (
@@ -37,7 +39,6 @@ from .models import (
     Proposal,
     Review,
     ReviewerAssignment,
-    ReviewerProfile,
     Speaker,
     Track,
 )
@@ -361,12 +362,11 @@ def cfp_proposal_confirm(request, proposal_id):
 # REVIEWER VIEWS
 # ======================================================================
 
-@role_required("reviewer")
+@role_required(Role.CFP_REVIEWER)
 def review_list(request):
     """List proposals assigned to this reviewer."""
-    profile = request.reviewer_profile
     assignments = (
-        ReviewerAssignment.objects.filter(reviewer=profile)
+        ReviewerAssignment.objects.filter(reviewer=request.user)
         .select_related("proposal__speaker", "proposal__track")
         .order_by("-assigned_at")
     )
@@ -377,13 +377,12 @@ def review_list(request):
     })
 
 
-@role_required("reviewer")
+@role_required(Role.CFP_REVIEWER)
 def review_detail(request, proposal_id):
     """View proposal detail for review (with optional score form)."""
-    profile = request.reviewer_profile
     assignment = get_object_or_404(
         ReviewerAssignment,
-        reviewer=profile,
+        reviewer=request.user,
         proposal_id=proposal_id,
     )
     proposal = assignment.proposal
@@ -408,13 +407,12 @@ def review_detail(request, proposal_id):
 
 
 @require_POST
-@role_required("reviewer")
+@role_required(Role.CFP_REVIEWER)
 def review_score(request, proposal_id):
     """Submit or update a review score."""
-    profile = request.reviewer_profile
     assignment = get_object_or_404(
         ReviewerAssignment,
-        reviewer=profile,
+        reviewer=request.user,
         proposal_id=proposal_id,
     )
 
@@ -449,13 +447,12 @@ def review_score(request, proposal_id):
 
 
 @require_POST
-@role_required("reviewer")
+@role_required(Role.CFP_REVIEWER)
 def review_conflict(request, proposal_id):
     """Declare a conflict of interest."""
-    profile = request.reviewer_profile
     assignment = get_object_or_404(
         ReviewerAssignment,
-        reviewer=profile,
+        reviewer=request.user,
         proposal_id=proposal_id,
     )
     assignment.has_conflict = True
@@ -468,7 +465,7 @@ def review_conflict(request, proposal_id):
 # CHAIR / ADMIN VIEWS
 # ======================================================================
 
-@role_required("chair")
+@role_required(Role.CFP_CHAIR)
 def admin_dashboard(request):
     """CFP dashboard with stats and proposal list."""
     stats = CFPService.get_dashboard_stats()
@@ -506,7 +503,7 @@ def admin_dashboard(request):
 
 
 @require_POST
-@role_required("chair")
+@role_required(Role.CFP_CHAIR)
 def admin_assign(request):
     """Assign reviewers to proposals."""
     form = AssignReviewerForm(request.POST)
@@ -541,7 +538,7 @@ def admin_assign(request):
 
 
 @require_POST
-@role_required("chair")
+@role_required(Role.CFP_CHAIR)
 def admin_decisions(request):
     """Bulk accept / reject / waitlist."""
     form = BulkDecisionForm(request.POST)
@@ -564,7 +561,7 @@ def admin_decisions(request):
     return redirect("cfp:admin_dashboard")
 
 
-@role_required("chair")
+@role_required(Role.CFP_CHAIR)
 def admin_export(request):
     """Export accepted talks as CSV or JSON."""
     fmt = request.GET.get("format", "csv")
@@ -584,7 +581,7 @@ def admin_export(request):
 
 
 @require_POST
-@role_required("chair")
+@role_required(Role.CFP_CHAIR)
 def admin_email(request):
     """Send bulk decision emails."""
     form = BulkEmailForm(request.POST)

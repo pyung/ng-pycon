@@ -6,14 +6,20 @@ Permission decorators for the Travel Grant system.
     @grant_reviewer_required - Grant reviewer (or chair)
     @grant_chair_required    - Grant chair only
     @grant_finance_required  - Finance team (or chair)
+
+The role guards are thin wrappers over ``accounts.decorators.role_required`` so
+the grant module and the CFP module answer the role question the same way. Grant
+chairs imply reviewer and finance, which is declared once in
+``accounts.roles.IMPLIES`` rather than re-checked here.
 """
 
 from functools import wraps
 
-from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
 
-from .models import GrantReviewerProfile
+from accounts.decorators import role_required
+from accounts.roles import Role
+
 from .services import GrantService
 
 
@@ -41,61 +47,11 @@ def login_required(view_func):
     return _wrapped
 
 
-def _get_grant_profile(request):
-    """Get GrantReviewerProfile if user has one; None otherwise."""
-    if not request.user.is_authenticated:
-        return None
-    try:
-        return request.user.grant_reviewer_profile
-    except GrantReviewerProfile.DoesNotExist:
-        return None
+#: Reviewer access. A grant chair holds this by implication.
+grant_reviewer_required = role_required(Role.GRANT_REVIEWER)
 
+#: Chair-only access: assigning reviewers and making decisions.
+grant_chair_required = role_required(Role.GRANT_CHAIR)
 
-def grant_reviewer_required(view_func):
-    """Require grant reviewer role (reviewer or chair)."""
-
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect("login")
-        profile = _get_grant_profile(request)
-        if not profile or not profile.is_active:
-            return HttpResponseForbidden("You do not have permission to access this page.")
-        request.grant_profile = profile
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped
-
-
-def grant_chair_required(view_func):
-    """Require grant chair role."""
-
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect("login")
-        profile = _get_grant_profile(request)
-        if not profile or not profile.is_active or not profile.is_chair:
-            return HttpResponseForbidden("Only chairs can access this page.")
-        request.grant_profile = profile
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped
-
-
-def grant_finance_required(view_func):
-    """Require finance team role (finance or chair)."""
-
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect("login")
-        profile = _get_grant_profile(request)
-        if not profile or not profile.is_active:
-            return HttpResponseForbidden("You do not have permission to access this page.")
-        if not profile.is_finance and not profile.is_chair:
-            return HttpResponseForbidden("You do not have permission to access this page.")
-        request.grant_profile = profile
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped
+#: Finance access. A grant chair holds this by implication.
+grant_finance_required = role_required(Role.FINANCE)

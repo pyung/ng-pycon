@@ -42,6 +42,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 INSTALLED_APPS = [
     "home",
     "search",
+    "accounts",
     "tickets",
     "cfp",
     "grants",
@@ -101,6 +102,7 @@ TEMPLATES = [
                 "pyconng.context_processors.conference_context",
                 "pyconng.context_processors.site_context",
                 "pyconng.context_processors.navigation_context",
+                "accounts.context_processors.user_roles",
             ],
         },
     },

@@ -4,7 +4,10 @@ Permission decorators for the CFP system.
     @cfp_open_required    – CFP must be Open
     @speaker_required     – valid speaker token in session / query-param
     @proposal_owner_required – speaker must own the proposal
-    @role_required(role)  – Django-authenticated user with reviewer/chair role
+
+Reviewer and chair access is not handled here. Use
+``accounts.decorators.role_required(Role.CFP_REVIEWER)`` so every module answers
+the role question the same way.
 """
 
 from functools import wraps
@@ -12,7 +15,7 @@ from functools import wraps
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 
-from .models import Proposal, ReviewerProfile, Speaker
+from .models import Proposal
 from .services import CFPService
 
 
@@ -87,48 +90,3 @@ def proposal_owner_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped
-
-
-# ------------------------------------------------------------------
-# Reviewer / Chair (Django-auth) guards
-# ------------------------------------------------------------------
-
-def role_required(role):
-    """
-    Decorator factory.
-
-    Usage::
-
-        @role_required("reviewer")
-        @role_required("chair")
-
-    A **chair** passes both ``reviewer`` and ``chair`` checks.
-    """
-
-    def decorator(view_func):
-        @wraps(view_func)
-        def _wrapped(request, *args, **kwargs):
-            if not request.user.is_authenticated:
-                return redirect("login")
-
-            try:
-                profile = request.user.reviewer_profile
-            except ReviewerProfile.DoesNotExist:
-                return HttpResponseForbidden(
-                    "You do not have permission to access this page."
-                )
-
-            if not profile.is_active:
-                return HttpResponseForbidden("Your reviewer account is inactive.")
-
-            if role == "chair" and not profile.is_chair:
-                return HttpResponseForbidden(
-                    "Only chairs can access this page."
-                )
-
-            request.reviewer_profile = profile
-            return view_func(request, *args, **kwargs)
-
-        return _wrapped
-
-    return decorator

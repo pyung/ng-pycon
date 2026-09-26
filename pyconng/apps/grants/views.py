@@ -29,28 +29,22 @@ from .forms import (
     TravelGrantApplicationForm,
 )
 from .models import (
-    GrantReviewerProfile,
     GrantReviewerAssignment,
     TravelGrantApplication,
     TravelGrantPayment,
     TravelGrantReview,
 )
+from accounts.roles import Role, roles_for, users_with_role
+
 from .services import GrantService
 
 
 def grant_landing(request):
     """Landing page - status badge and Apply CTA when open."""
     settings_obj = GrantService.get_current_settings()
-    grant_profile = None
-    if request.user.is_authenticated:
-        try:
-            grant_profile = request.user.grant_reviewer_profile
-        except GrantReviewerProfile.DoesNotExist:
-            pass
     return render(request, "grants/landing.html", {
         "grant_settings": settings_obj,
         "conference_year": CURRENT_YEAR,
-        "grant_profile": grant_profile,
     })
 
 
@@ -160,9 +154,8 @@ def grant_withdraw(request, application_id):
 @grant_reviewer_required
 def grant_review_list(request):
     """List applications assigned to this reviewer."""
-    profile = request.grant_profile
     assignments = (
-        GrantReviewerAssignment.objects.filter(reviewer=profile)
+        GrantReviewerAssignment.objects.filter(reviewer=request.user)
         .select_related("application__user")
         .prefetch_related("review")
         .order_by("-assigned_at")
@@ -176,10 +169,9 @@ def grant_review_list(request):
 @grant_reviewer_required
 def grant_review_detail(request, application_id):
     """View application and submit/update review scores."""
-    profile = request.grant_profile
     assignment = get_object_or_404(
         GrantReviewerAssignment,
-        reviewer=profile,
+        reviewer=request.user,
         application_id=application_id,
     )
     application = assignment.application
@@ -235,7 +227,7 @@ def grant_admin_dashboard(request):
         TravelGrantApplication.objects.filter(conference_year=CURRENT_YEAR)
         .exclude(status=TravelGrantApplication.STATUS_DRAFT)
         .select_related("user")
-        .prefetch_related("assignments__reviewer__user")
+        .prefetch_related("assignments__reviewer")
         .order_by("-submitted_at")
     )
 
@@ -247,8 +239,7 @@ def grant_admin_dashboard(request):
     if country_filter:
         applications = applications.filter(country_of_residence=country_filter)
     if assigned_to_me:
-        profile = request.grant_profile
-        applications = applications.filter(assignments__reviewer=profile).distinct()
+            applications = applications.filter(assignments__reviewer=request.user).distinct()
 
     countries = (
         TravelGrantApplication.objects.filter(conference_year=CURRENT_YEAR)
@@ -258,11 +249,7 @@ def grant_admin_dashboard(request):
         .order_by("country_of_residence")
     )
 
-    reviewers = (
-        GrantReviewerProfile.objects.filter(is_active=True)
-        .select_related("user")
-        .order_by("user__email")
-    )
+    reviewers = users_with_role(Role.GRANT_REVIEWER, CURRENT_YEAR)
 
     return render(request, "grants/admin_dashboard.html", {
         "stats": stats,
@@ -287,7 +274,7 @@ def grant_admin_detail(request, application_id):
         conference_year=CURRENT_YEAR,
     )
     cfp_info = GrantService.get_user_cfp_info(application.user)
-    assignments = application.assignments.select_related("reviewer__user").prefetch_related("review")
+    assignments = application.assignments.select_related("reviewer").prefetch_related("review")
     return render(request, "grants/admin_detail.html", {
         "application": application,
         "cfp_info": cfp_info,
@@ -306,7 +293,7 @@ def grant_admin_assign(request):
     if form.is_valid():
         app_ids = form.cleaned_data["application_ids"]
         reviewer_ids = form.cleaned_data["reviewer_ids"]
-        reviewers = GrantReviewerProfile.objects.filter(pk__in=reviewer_ids, is_active=True)
+        reviewers = users_with_role(Role.GRANT_REVIEWER, CURRENT_YEAR).filter(pk__in=reviewer_ids)
         created = 0
         for app in TravelGrantApplication.objects.filter(pk__in=app_ids):
             for rev in reviewers:

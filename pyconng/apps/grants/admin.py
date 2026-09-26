@@ -2,7 +2,6 @@ from django.contrib import admin
 
 from .models import (
     GrantReviewerAssignment,
-    GrantReviewerProfile,
     GrantSettings,
     TravelGrantApplication,
     TravelGrantPayment,
@@ -34,12 +33,6 @@ class TravelGrantApplicationAdmin(admin.ModelAdmin):
         return f"₦{obj.total_requested:,.2f}"
 
     total_requested_display.short_description = "Total Requested"
-
-
-@admin.register(GrantReviewerProfile)
-class GrantReviewerProfileAdmin(admin.ModelAdmin):
-    list_display = ["user", "is_chair", "is_finance", "is_active"]
-    list_filter = ["is_chair", "is_finance", "is_active"]
 
 
 @admin.register(GrantReviewerAssignment)

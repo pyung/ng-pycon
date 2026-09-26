@@ -297,33 +297,18 @@ class ProposalAuditLog(models.Model):
 # Review System
 # ---------------------------------------------------------------------------
 
-class ReviewerProfile(models.Model):
-    """
-    Links a Django user account to a Reviewer or Chair role.
-    """
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="reviewer_profile",
-    )
-    is_chair = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name = "Reviewer Profile"
-        verbose_name_plural = "Reviewer Profiles"
-
-    def __str__(self):
-        role = "Chair" if self.is_chair else "Reviewer"
-        return f"{self.user.get_full_name() or self.user.username} ({role})"
-
-
 class ReviewerAssignment(models.Model):
-    """Assignment of a reviewer to a specific proposal."""
+    """
+    Assignment of a reviewer to a specific proposal.
+
+    Who counts as a reviewer is answered by ``accounts.roles`` -- the CFP
+    reviewer and CFP chair roles -- not by a profile row here.
+    """
 
     reviewer = models.ForeignKey(
-        ReviewerProfile, on_delete=models.CASCADE, related_name="assignments",
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="cfp_assignments",
     )
     proposal = models.ForeignKey(
         Proposal, on_delete=models.CASCADE, related_name="assignments",

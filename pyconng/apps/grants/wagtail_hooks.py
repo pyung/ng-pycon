@@ -10,7 +10,6 @@ from wagtail_modeladmin.options import (
 
 from .models import (
     GrantReviewerAssignment,
-    GrantReviewerProfile,
     GrantSettings,
     TravelGrantApplication,
     TravelGrantPayment,
@@ -56,15 +55,6 @@ class TravelGrantApplicationAdmin(ModelAdmin):
     total_requested_display.short_description = "Total Requested"
 
 
-class GrantReviewerProfileAdmin(ModelAdmin):
-    model = GrantReviewerProfile
-    menu_label = "Reviewers"
-    menu_icon = "group"
-    menu_order = 300
-    list_display = ["user", "is_chair", "is_finance", "is_active"]
-    list_filter = ["is_chair", "is_finance", "is_active"]
-
-
 class GrantReviewerAssignmentAdmin(ModelAdmin):
     model = GrantReviewerAssignment
     menu_label = "Assignments"
@@ -72,7 +62,7 @@ class GrantReviewerAssignmentAdmin(ModelAdmin):
     menu_order = 350
     list_display = ["reviewer", "application", "has_conflict", "assigned_at"]
     list_filter = ["has_conflict"]
-    search_fields = ["reviewer__user__email", "application__user__email"]
+    search_fields = ["reviewer__email", "application__user__email"]
 
 
 class TravelGrantPaymentAdmin(ModelAdmin):
@@ -90,7 +80,6 @@ class GrantsAdminGroup(ModelAdminGroup):
     items = (
         GrantSettingsAdmin,
         TravelGrantApplicationAdmin,
-        GrantReviewerProfileAdmin,
         GrantReviewerAssignmentAdmin,
         TravelGrantPaymentAdmin,
     )

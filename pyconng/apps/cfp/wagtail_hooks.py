@@ -9,7 +9,6 @@ from .models import (
     EmailTemplate,
     Proposal,
     ReviewerAssignment,
-    ReviewerProfile,
     Speaker,
     Track,
 )
@@ -60,15 +59,6 @@ class ProposalAdmin(ModelAdmin):
     search_fields = ["title", "speaker__full_name", "speaker__email"]
 
 
-class ReviewerProfileAdmin(ModelAdmin):
-    model = ReviewerProfile
-    menu_label = "Reviewers"
-    menu_icon = "group"
-    menu_order = 500
-    list_display = ["user", "is_chair", "is_active"]
-    list_filter = ["is_chair", "is_active"]
-
-
 class ReviewerAssignmentAdmin(ModelAdmin):
     model = ReviewerAssignment
     menu_label = "Assignments"
@@ -96,7 +86,6 @@ class CFPAdminGroup(ModelAdminGroup):
         TrackAdmin,
         SpeakerAdmin,
         ProposalAdmin,
-        ReviewerProfileAdmin,
         ReviewerAssignmentAdmin,
         EmailTemplateAdmin,
     )

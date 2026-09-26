@@ -13,7 +13,6 @@ from pyconng.context_processors import CURRENT_YEAR
 
 from .models import (
     GrantReviewerAssignment,
-    GrantReviewerProfile,
     GrantSettings,
     TravelGrantApplication,
     TravelGrantPayment,
@@ -114,9 +113,14 @@ class GrantService:
     @staticmethod
     def auto_assign_reviewers(application, count=2):
         """Assign up to `count` reviewers to an application (round-robin from pool)."""
+        from accounts.roles import Role, users_with_role
+
+        year = application.conference_year
+        # Chairs decide, so they stay out of the automatic review pool.
+        chairs = users_with_role(Role.GRANT_CHAIR, year).values("pk")
         reviewers = list(
-            GrantReviewerProfile.objects.filter(is_active=True)
-            .exclude(is_chair=True)
+            users_with_role(Role.GRANT_REVIEWER, year)
+            .exclude(pk__in=chairs)
             .order_by("id")
         )
         if not reviewers:

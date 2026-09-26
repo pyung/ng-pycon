@@ -59,9 +59,9 @@
                 </div>
             </div>
 
-            {% if grant_profile and grant_profile.is_active %}
+            {% if roles.is_grant_reviewer %}
             <div class="mb-8 flex justify-center gap-3">
-                {% if grant_profile.is_chair %}
+                {% if roles.is_grant_chair %}
                 <a href="{% url 'grants:admin_dashboard' %}" class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50">
                     Admin Dashboard
                 </a>
@@ -69,7 +69,7 @@
                 <a href="{% url 'grants:review_list' %}" class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50">
                     My Assignments
                 </a>
-                {% if grant_profile.is_finance or grant_profile.is_chair %}
+                {% if roles.is_finance %}
                 <a href="{% url 'grants:finance_list' %}" class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50">
                     Finance
                 </a>

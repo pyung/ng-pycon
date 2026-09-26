@@ -13,24 +13,16 @@ from wagtail.models import Site
 from home.models import HomePage, SponsorPage
 from pyconng.context_processors import CURRENT_YEAR
 
-from grants.models import GrantReviewerProfile, GrantReviewerAssignment
+from accounts.roles import roles_for
+
+from grants.models import GrantReviewerAssignment
 from grants.services import GrantService
 
 
-def _get_cfp_context(user):
-    """CFP reviewer/chair context. Returns None if CFP models unavailable."""
-    try:
-        from cfp.models import ReviewerProfile, ReviewerAssignment
-        profile = ReviewerProfile.objects.filter(user=user, is_active=True).first()
-        if not profile:
-            return None
-        assignments = ReviewerAssignment.objects.filter(reviewer=profile).select_related("proposal")
-        return {
-            "profile": profile,
-            "assignment_count": assignments.count(),
-        }
-    except Exception:
-        return None
+def _cfp_assignment_count(user):
+    """How many proposals this person has been asked to review."""
+    from cfp.models import ReviewerAssignment
+    return ReviewerAssignment.objects.filter(reviewer=user).count()
 
 
 def _get_cfp_open():
@@ -108,33 +100,11 @@ def dashboard(request):
     if not request.user.is_authenticated:
         return redirect(reverse("login") + f"?next={request.path}")
 
-    grant_profile = None
-    try:
-        grant_profile = request.user.grant_reviewer_profile
-    except GrantReviewerProfile.DoesNotExist:
-        pass
+    roles = roles_for(request.user, CURRENT_YEAR)
 
-    cfp_context = _get_cfp_context(request.user)
-
-    roles = {
-        "is_attendee": True,
-        "is_cfp_reviewer": False,
-        "is_cfp_chair": False,
-        "is_grant_reviewer": False,
-        "is_grant_chair": False,
-        "is_finance": False,
-        "is_super_admin": request.user.is_staff or request.user.is_superuser,
-    }
-
-    if cfp_context and cfp_context.get("profile"):
-        p = cfp_context["profile"]
-        roles["is_cfp_reviewer"] = p.is_active and not p.is_chair
-        roles["is_cfp_chair"] = p.is_active and p.is_chair
-
-    if grant_profile and grant_profile.is_active:
-        roles["is_grant_reviewer"] = not grant_profile.is_chair
-        roles["is_grant_chair"] = grant_profile.is_chair
-        roles["is_finance"] = grant_profile.is_finance or grant_profile.is_chair
+    cfp_context = None
+    if roles.is_cfp_reviewer:
+        cfp_context = {"assignment_count": _cfp_assignment_count(request.user)}
 
     grant_application = GrantService.get_user_application(request.user)
     grant_open = GrantService.is_grant_open()
@@ -142,9 +112,9 @@ def dashboard(request):
     cfp_open = _get_cfp_open()
 
     grant_assignment_count = 0
-    if grant_profile and grant_profile.is_active:
+    if roles.is_grant_reviewer:
         grant_assignment_count = GrantReviewerAssignment.objects.filter(
-            reviewer=grant_profile
+            reviewer=request.user
         ).count()
 
     sponsor_page = _get_current_year_sponsor_page(request)

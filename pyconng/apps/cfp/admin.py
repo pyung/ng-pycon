@@ -8,7 +8,6 @@ from .models import (
     ProposalSnapshot,
     Review,
     ReviewerAssignment,
-    ReviewerProfile,
     Speaker,
     Track,
 )
@@ -70,18 +69,11 @@ class ProposalAuditLogAdmin(admin.ModelAdmin):
     ordering = ["-created_at"]
 
 
-@admin.register(ReviewerProfile)
-class ReviewerProfileAdmin(admin.ModelAdmin):
-    list_display = ["user", "is_chair", "is_active"]
-    list_filter = ["is_chair", "is_active"]
-    search_fields = ["user__username", "user__email"]
-
-
 @admin.register(ReviewerAssignment)
 class ReviewerAssignmentAdmin(admin.ModelAdmin):
     list_display = ["reviewer", "proposal", "assigned_at", "has_conflict"]
     list_filter = ["has_conflict"]
-    search_fields = ["reviewer__user__username", "proposal__title"]
+    search_fields = ["reviewer__username", "reviewer__email", "proposal__title"]
 
 
 @admin.register(Review)

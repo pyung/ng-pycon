@@ -197,47 +197,17 @@ class TravelGrantApplication(models.Model):
             assignment__application=self,
         ).count()
 
-class GrantReviewerProfile(models.Model):
-    """
-    Links a Django user to Travel Grant Reviewer, Chair, or Finance role.
-    Separate from CFP ReviewerProfile.
-    """
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="grant_reviewer_profile",
-    )
-    is_chair = models.BooleanField(
-        default=False,
-        help_text="Chair can view all, make decisions, assign reviewers",
-    )
-    is_finance = models.BooleanField(
-        default=False,
-        help_text="Finance can view approved grants, mark payments",
-    )
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name = "Grant Reviewer Profile"
-        verbose_name_plural = "Grant Reviewer Profiles"
-
-    def __str__(self):
-        roles = []
-        if self.is_chair:
-            roles.append("Chair")
-        if self.is_finance:
-            roles.append("Finance")
-        if not roles:
-            roles.append("Reviewer")
-        return f"{self.user.get_full_name() or self.user.username} ({', '.join(roles)})"
-
-
 class GrantReviewerAssignment(models.Model):
-    """Assignment of a reviewer to a travel grant application."""
+    """
+    Assignment of a reviewer to a travel grant application.
+
+    Who counts as a grant reviewer is answered by ``accounts.roles`` -- the
+    grant reviewer, grant chair and finance roles. Those stay separate from the
+    CFP roles, so reviewing talks confers nothing over travel money.
+    """
 
     reviewer = models.ForeignKey(
-        GrantReviewerProfile,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="grant_assignments",
     )
