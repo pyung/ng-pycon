@@ -16,7 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from accounts.decorators import role_required
 from accounts.roles import Role
@@ -54,13 +54,13 @@ def cfp_landing(request):
     """CFP landing page – guidelines, dates, tracks."""
     cfp = CFPService.get_current_cfp()
     tracks = Track.objects.filter(
-        conference_year=CURRENT_YEAR, is_active=True,
+        conference_year=current_year(), is_active=True,
     ).order_by("display_order", "name")
 
     return render(request, "cfp/landing.html", {
         "cfp": cfp,
         "tracks": tracks,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -102,7 +102,7 @@ def cfp_submit(request):
             # Build proposal
             proposal = proposal_form.save(commit=False)
             proposal.speaker = sp
-            proposal.conference_year = CURRENT_YEAR
+            proposal.conference_year = current_year()
 
             # Determine action: Save Draft vs Submit
             action = request.POST.get("action", "draft")
@@ -148,7 +148,7 @@ def cfp_submit(request):
         "speaker_form": speaker_form,
         "proposal_form": proposal_form,
         "cfp": cfp,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -157,7 +157,7 @@ def cfp_closed(request):
     cfp = CFPService.get_current_cfp()
     return render(request, "cfp/closed.html", {
         "cfp": cfp,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -170,13 +170,13 @@ def cfp_my_proposals(request):
     """List the current speaker's proposals."""
     speaker = request.cfp_speaker
     proposals = Proposal.objects.filter(
-        speaker__user=request.user, conference_year=CURRENT_YEAR,
+        speaker__user=request.user, conference_year=current_year(),
     ).order_by("-created_at")
 
     return render(request, "cfp/my_proposals.html", {
         "speaker": speaker,
         "proposals": proposals,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "cfp_is_open": CFPService.is_cfp_open(),
     })
 
@@ -191,7 +191,7 @@ def cfp_proposal_detail(request, proposal_id):
     return render(request, "cfp/proposal_detail.html", {
         "proposal": proposal,
         "audit_logs": audit_logs,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "cfp_is_open": CFPService.is_cfp_open(),
     })
 
@@ -262,7 +262,7 @@ def cfp_proposal_edit(request, proposal_id):
         "proposal_form": proposal_form,
         "proposal": proposal,
         "cfp": cfp,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -293,7 +293,7 @@ def cfp_proposal_status(request, proposal_id):
     proposal = request.cfp_proposal
     return render(request, "cfp/proposal_status.html", {
         "proposal": proposal,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -331,7 +331,7 @@ def review_list(request):
 
     return render(request, "cfp/review_list.html", {
         "assignments": assignments,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -360,7 +360,7 @@ def review_detail(request, proposal_id):
         "proposal": proposal,
         "form": form,
         "existing_review": existing_review,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -398,7 +398,7 @@ def review_score(request, proposal_id):
             "proposal": assignment.proposal,
             "form": form,
             "existing_review": getattr(assignment, "review", None),
-            "conference_year": CURRENT_YEAR,
+            "conference_year": current_year(),
         })
 
     return redirect("cfp:review_detail", proposal_id=proposal_id)
@@ -430,7 +430,7 @@ def admin_dashboard(request):
     cfp = CFPService.get_current_cfp()
 
     proposals = (
-        Proposal.objects.filter(conference_year=CURRENT_YEAR)
+        Proposal.objects.filter(conference_year=current_year())
         .exclude(status=Proposal.STATUS_DRAFT)
         .select_related("speaker", "track")
         .order_by("-submitted_at")
@@ -445,7 +445,7 @@ def admin_dashboard(request):
         proposals = proposals.filter(track_id=track_filter)
 
     tracks = Track.objects.filter(
-        conference_year=CURRENT_YEAR, is_active=True,
+        conference_year=current_year(), is_active=True,
     )
 
     return render(request, "cfp/admin_dashboard.html", {
@@ -455,7 +455,7 @@ def admin_dashboard(request):
         "tracks": tracks,
         "status_filter": status_filter,
         "track_filter": track_filter,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "status_choices": Proposal.STATUS_CHOICES,
     })
 
@@ -528,12 +528,12 @@ def admin_export(request):
     if fmt == "json":
         response = HttpResponse(content, content_type="application/json")
         response["Content-Disposition"] = (
-            f'attachment; filename="pycon_ng_{CURRENT_YEAR}_talks.json"'
+            f'attachment; filename="pycon_ng_{current_year()}_talks.json"'
         )
     else:
         response = HttpResponse(content, content_type="text/csv")
         response["Content-Disposition"] = (
-            f'attachment; filename="pycon_ng_{CURRENT_YEAR}_talks.csv"'
+            f'attachment; filename="pycon_ng_{current_year()}_talks.csv"'
         )
     return response
 

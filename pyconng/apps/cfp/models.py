@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from wagtail.fields import RichTextField
+from editions.validators import validate_edition_year
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +28,7 @@ class CFPSettings(models.Model):
         (STATUS_CLOSED, "Closed"),
     ]
 
-    conference_year = models.IntegerField(unique=True)
+    conference_year = models.IntegerField(unique=True, validators=[validate_edition_year])
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT,
     )
@@ -83,7 +84,7 @@ class Track(models.Model):
 
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    conference_year = models.IntegerField()
+    conference_year = models.IntegerField(validators=[validate_edition_year])
     is_active = models.BooleanField(default=True)
     display_order = models.IntegerField(default=0)
 
@@ -397,7 +398,7 @@ class EmailTemplate(models.Model):
         ),
     )
     template_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    conference_year = models.IntegerField()
+    conference_year = models.IntegerField(validators=[validate_edition_year])
 
     class Meta:
         unique_together = ["template_type", "conference_year"]

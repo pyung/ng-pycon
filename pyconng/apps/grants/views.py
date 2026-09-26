@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from .decorators import (
     grant_chair_required,
@@ -44,7 +44,7 @@ def grant_landing(request):
     settings_obj = GrantService.get_current_settings()
     return render(request, "grants/landing.html", {
         "grant_settings": settings_obj,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -72,7 +72,7 @@ def grant_apply(request):
         if form.is_valid():
             app = form.save(commit=False)
             app.user = request.user
-            app.conference_year = CURRENT_YEAR
+            app.conference_year = current_year()
             if submit_action:
                 app.status = TravelGrantApplication.STATUS_SUBMITTED
                 app.submitted_at = timezone.now()
@@ -95,7 +95,7 @@ def grant_apply(request):
         "grant_settings": settings_obj,
         "application": application,
         "cfp_info": cfp_info,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "user": request.user,
     })
 
@@ -105,7 +105,7 @@ def grant_closed(request):
     settings_obj = GrantService.get_current_settings()
     return render(request, "grants/closed.html", {
         "grant_settings": settings_obj,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -115,7 +115,7 @@ def grant_my_application(request):
     application = GrantService.get_user_application(request.user)
     return render(request, "grants/my_application.html", {
         "application": application,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "grant_open": GrantService.is_grant_open(),
     })
 
@@ -130,7 +130,7 @@ def grant_application_detail(request, application_id):
     )
     return render(request, "grants/application_detail.html", {
         "application": application,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -162,7 +162,7 @@ def grant_review_list(request):
     )
     return render(request, "grants/review_list.html", {
         "assignments": assignments,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -214,7 +214,7 @@ def grant_review_detail(request, application_id):
         "form": form,
         "existing_review": existing_review,
         "cfp_info": cfp_info,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 @grant_chair_required
@@ -224,7 +224,7 @@ def grant_admin_dashboard(request):
     settings_obj = GrantService.get_current_settings()
 
     applications = (
-        TravelGrantApplication.objects.filter(conference_year=CURRENT_YEAR)
+        TravelGrantApplication.objects.filter(conference_year=current_year())
         .exclude(status=TravelGrantApplication.STATUS_DRAFT)
         .select_related("user")
         .prefetch_related("assignments__reviewer")
@@ -242,14 +242,14 @@ def grant_admin_dashboard(request):
             applications = applications.filter(assignments__reviewer=request.user).distinct()
 
     countries = (
-        TravelGrantApplication.objects.filter(conference_year=CURRENT_YEAR)
+        TravelGrantApplication.objects.filter(conference_year=current_year())
         .exclude(status=TravelGrantApplication.STATUS_DRAFT)
         .values_list("country_of_residence", flat=True)
         .distinct()
         .order_by("country_of_residence")
     )
 
-    reviewers = users_with_role(Role.GRANT_REVIEWER, CURRENT_YEAR)
+    reviewers = users_with_role(Role.GRANT_REVIEWER, current_year())
 
     return render(request, "grants/admin_dashboard.html", {
         "stats": stats,
@@ -260,7 +260,7 @@ def grant_admin_dashboard(request):
         "country_filter": country_filter,
         "assigned_to_me": assigned_to_me,
         "reviewers": reviewers,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "status_choices": TravelGrantApplication.STATUS_CHOICES,
     })
 
@@ -271,7 +271,7 @@ def grant_admin_detail(request, application_id):
     application = get_object_or_404(
         TravelGrantApplication,
         pk=application_id,
-        conference_year=CURRENT_YEAR,
+        conference_year=current_year(),
     )
     cfp_info = GrantService.get_user_cfp_info(application.user)
     assignments = application.assignments.select_related("reviewer").prefetch_related("review")
@@ -279,7 +279,7 @@ def grant_admin_detail(request, application_id):
         "application": application,
         "cfp_info": cfp_info,
         "assignments": assignments,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -293,7 +293,7 @@ def grant_admin_assign(request):
     if form.is_valid():
         app_ids = form.cleaned_data["application_ids"]
         reviewer_ids = form.cleaned_data["reviewer_ids"]
-        reviewers = users_with_role(Role.GRANT_REVIEWER, CURRENT_YEAR).filter(pk__in=reviewer_ids)
+        reviewers = users_with_role(Role.GRANT_REVIEWER, current_year()).filter(pk__in=reviewer_ids)
         created = 0
         for app in TravelGrantApplication.objects.filter(pk__in=app_ids):
             for rev in reviewers:
@@ -342,10 +342,10 @@ def grant_admin_export(request):
     content = GrantService.export_approved_grants(fmt=fmt)
     if fmt == "json":
         response = HttpResponse(content, content_type="application/json")
-        response["Content-Disposition"] = f'attachment; filename="pycon_ng_{CURRENT_YEAR}_grants.json"'
+        response["Content-Disposition"] = f'attachment; filename="pycon_ng_{current_year()}_grants.json"'
     else:
         response = HttpResponse(content, content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="pycon_ng_{CURRENT_YEAR}_grants.csv"'
+        response["Content-Disposition"] = f'attachment; filename="pycon_ng_{current_year()}_grants.csv"'
     return response
 
 @grant_finance_required
@@ -353,7 +353,7 @@ def grant_finance_list(request):
     """List approved grants for payment processing."""
     applications = (
         TravelGrantApplication.objects.filter(
-            conference_year=CURRENT_YEAR,
+            conference_year=current_year(),
             status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID],
         )
         .select_related("user")
@@ -367,7 +367,7 @@ def grant_finance_list(request):
         )
     return render(request, "grants/finance_list.html", {
         "applications": applications,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })
 
 
@@ -377,7 +377,7 @@ def grant_finance_detail(request, application_id):
     application = get_object_or_404(
         TravelGrantApplication,
         pk=application_id,
-        conference_year=CURRENT_YEAR,
+        conference_year=current_year(),
         status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID],
     )
     payment, _ = TravelGrantPayment.objects.get_or_create(
@@ -412,5 +412,5 @@ def grant_finance_detail(request, application_id):
         "application": application,
         "payment": payment,
         "form": form,
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
     })

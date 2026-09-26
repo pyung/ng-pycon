@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db import transaction
 
 from .utils import generate_order_code
+from editions.validators import validate_edition_year
 
 
 class Coupon(models.Model):
@@ -13,7 +14,10 @@ class Coupon(models.Model):
     percentage = models.IntegerField(default=5, help_text="Discount percentage (e.g. 5 = 5% off)")
     max_usage = models.IntegerField(default=1, help_text="Maximum number of times this coupon can be used")
     expired = models.BooleanField(default=False)
-    conference_year = models.IntegerField(help_text="Conference year this coupon is valid for")
+    conference_year = models.IntegerField(
+        validators=[validate_edition_year],
+        help_text="Conference year this coupon is valid for",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -55,7 +59,10 @@ class TicketType(models.Model):
     )
     early_bird_count = models.IntegerField(default=0, help_text="Number of early bird tickets available")
     regular_count = models.IntegerField(default=0, help_text="Number of regular tickets available")
-    conference_year = models.IntegerField(help_text="Conference year this ticket type belongs to")
+    conference_year = models.IntegerField(
+        validators=[validate_edition_year],
+        help_text="Conference year this ticket type belongs to",
+    )
     is_active = models.BooleanField(default=True)
     display_order = models.IntegerField(default=0, help_text="Order in which ticket types are displayed")
 

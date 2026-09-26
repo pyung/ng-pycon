@@ -10,7 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 import json
 from .models import NewsletterSubscriber
 from .forms import SignupForm
@@ -81,7 +81,7 @@ class SignupView(FormView):
         path = request.path
         if path.startswith('/') and len(path) > 1:
             parts = path.strip('/').split('/')
-            if parts[0].isdigit() and int(parts[0]) != CURRENT_YEAR:
+            if parts[0].isdigit() and int(parts[0]) != current_year():
                 return HttpResponseForbidden("Authentication is only available for the current conference year.")
         return super().dispatch(request, *args, **kwargs)
     
@@ -107,7 +107,7 @@ class LoginView(DjangoLoginView):
         path = request.path
         if path.startswith('/') and len(path) > 1:
             parts = path.strip('/').split('/')
-            if parts[0].isdigit() and int(parts[0]) != CURRENT_YEAR:
+            if parts[0].isdigit() and int(parts[0]) != current_year():
                 return HttpResponseForbidden("Authentication is only available for the current conference year.")
         return super().dispatch(request, *args, **kwargs)
     
@@ -139,7 +139,7 @@ class LogoutView(LoginRequiredMixin, TemplateView):
         path = request.path
         if path.startswith('/') and len(path) > 1:
             parts = path.strip('/').split('/')
-            if parts[0].isdigit() and int(parts[0]) != CURRENT_YEAR:
+            if parts[0].isdigit() and int(parts[0]) != current_year():
                 return HttpResponseForbidden("Authentication is only available for the current conference year.")
         return super().dispatch(request, *args, **kwargs)
     

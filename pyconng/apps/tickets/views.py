@@ -12,7 +12,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, RedirectView, TemplateView
 
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from .forms import PurchaseForm, TicketCreateForm, TicketEditForm, TicketTransferForm
 from .models import Coupon, Ticket, TicketSale, TicketType
@@ -30,7 +30,7 @@ class TicketHomeView(TemplateView):
         context = super().get_context_data(**kwargs)
         ticket_types = (
             TicketType.objects.active()
-            .for_year(CURRENT_YEAR)
+            .for_year(current_year())
             .order_by("display_order", "price")
         )
         context["ticket_types"] = [
@@ -47,7 +47,7 @@ class TicketHomeView(TemplateView):
             for tt in ticket_types
             if tt.current_price > 0
         ]
-        context["conference_year"] = CURRENT_YEAR
+        context["conference_year"] = current_year()
         return context
 
 
@@ -66,7 +66,7 @@ class PurchaseView(LoginRequiredMixin, TemplateView):
             return JsonResponse({"error": "Invalid request data"}, status=400)
 
         form_data = {**data.get("tickets", {}), "coupon": data.get("coupon", "")}
-        form = PurchaseForm(form_data, conference_year=CURRENT_YEAR)
+        form = PurchaseForm(form_data, conference_year=current_year())
 
         if form.is_valid():
             result = form.save(request.user)
@@ -81,7 +81,7 @@ class PurchaseView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         ticket_types = (
             TicketType.objects.active()
-            .for_year(CURRENT_YEAR)
+            .for_year(current_year())
             .order_by("display_order", "price")
         )
 
@@ -102,7 +102,7 @@ class PurchaseView(LoginRequiredMixin, TemplateView):
             "tickets": tickets,
             "pricings_json": json.dumps(pricings),
             "public_key": settings.PAYSTACK_PUBLIC_KEY,
-            "conference_year": CURRENT_YEAR,
+            "conference_year": current_year(),
             "user_email": self.request.user.email if self.request.user.is_authenticated else "",
             "user_first_name": self.request.user.first_name if self.request.user.is_authenticated else "",
             "user_last_name": self.request.user.last_name if self.request.user.is_authenticated else "",
@@ -117,7 +117,7 @@ def valid_coupons(request):
         coupon = Coupon.objects.filter(
             code__iexact=code,
             expired=False,
-            conference_year=CURRENT_YEAR,
+            conference_year=current_year(),
         ).first()
         if coupon and coupon.is_valid:
             return JsonResponse({"status": coupon.percentage})

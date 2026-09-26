@@ -11,6 +11,7 @@ from django.db import models
 from django.utils import timezone
 
 from decimal import Decimal
+from editions.validators import validate_edition_year
 
 class GrantSettings(models.Model):
     """
@@ -27,7 +28,7 @@ class GrantSettings(models.Model):
         (STATUS_CLOSED, "Closed"),
     ]
 
-    conference_year = models.IntegerField(unique=True)
+    conference_year = models.IntegerField(unique=True, validators=[validate_edition_year])
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT,
     )

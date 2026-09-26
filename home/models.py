@@ -1,7 +1,12 @@
+import logging
+
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.template import TemplateDoesNotExist
+from django.template.loader import get_template
 from django.urls import reverse
 
+from editions.validators import validate_edition_year
 from wagtail.models import Page
 from wagtail.fields import RichTextField, StreamField
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel
@@ -9,6 +14,9 @@ from wagtail import blocks
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.images import get_image_model_string
 from wagtail.blocks import PageChooserBlock
+
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureBlock(blocks.StructBlock):
@@ -175,23 +183,22 @@ class HomePage(Page):
     conference_year = models.IntegerField(
         null=True,
         blank=True,
+        validators=[validate_edition_year],
         help_text="The conference year this page represents (e.g., 2024, 2025). Leave blank for current year."
     )
     
-    # Theme/Design selection
-    THEME_CHOICES = [
-        ('default', 'Default Theme (current design)'),
-        ('theme_2024', '2024 Theme'),
-        ('theme_2025', '2025 Theme'),
-        ('theme_2026', '2026 Theme'),
-        ('theme_legacy', 'Legacy Theme'),
-    ]
-    
+    # Theme/Design selection.
+    # Deliberately free text rather than choices: adding a theme for a new
+    # edition should not need a migration. Leave blank to inherit the theme from
+    # this page's Edition, which is the usual case.
     theme = models.CharField(
         max_length=50,
-        choices=THEME_CHOICES,
-        default='default',
-        help_text="Select the design/theme for this conference year"
+        blank=True,
+        default="",
+        help_text=(
+            "Template theme override, e.g. theme_2026. Leave blank to use the "
+            "theme set on this page's Edition."
+        ),
     )
     
     # Hero Section
@@ -366,19 +373,44 @@ class HomePage(Page):
         from .models import StandardPage
         return StandardPage
     
+    DEFAULT_TEMPLATE = "home/home_page.html"
+
+    @property
+    def resolved_theme(self):
+        """
+        The theme this page renders with: its own override, else the theme set on
+        its Edition. Empty when neither is set, meaning the default design.
+        """
+        if self.theme:
+            return self.theme
+        from editions.current import current_year, edition_for_year
+
+        edition = edition_for_year(self.conference_year or current_year())
+        if edition and edition.theme:
+            # Editions store a bare slug ("2026"); templates are "theme_2026".
+            return f"theme_{edition.theme}"
+        return ""
+
     def get_template(self, request, *args, **kwargs):
         """
-        Dynamically select template based on the chosen theme.
-        This allows different conference years to have completely different designs.
+        Pick the template from the resolved theme, so a new edition's design is
+        a matter of adding a template plus an Edition row -- no code change to
+        map it, and no migration to allow the value.
         """
-        theme_templates = {
-            'default': 'home/home_page.html',
-            'theme_2024': 'home/themes/theme_2024.html',
-            'theme_2025': 'home/themes/theme_2025.html',
-            'theme_2026': 'home/themes/theme_2026.html',
-            'theme_legacy': 'home/themes/theme_legacy.html',
-        }
-        return theme_templates.get(self.theme, 'home/home_page.html')
+        theme = self.resolved_theme
+        if not theme or theme == "default":
+            return self.DEFAULT_TEMPLATE
+
+        candidate = f"home/themes/{theme}.html"
+        try:
+            get_template(candidate)
+        except TemplateDoesNotExist:
+            logger.warning(
+                "HomePage %s wants theme %r but %s is missing; using the default design.",
+                self.pk, theme, candidate,
+            )
+            return self.DEFAULT_TEMPLATE
+        return candidate
     
     def save(self, *args, **kwargs):
         """Auto-set slug and title based on conference year if specified."""
@@ -422,10 +454,10 @@ class HomePage(Page):
 
     def get_ticket_types(self):
         """Fetch ticket types from the tickets app for this page's conference year."""
-        from pyconng.context_processors import CURRENT_YEAR
+        from editions.current import current_year
         from tickets.models import TicketType
 
-        year = self.conference_year or CURRENT_YEAR
+        year = self.conference_year or current_year()
         ticket_types = (
             TicketType.objects.active()
             .for_year(year)

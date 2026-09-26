@@ -1,7 +1,7 @@
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from .models import Proposal, Review, Track
 
@@ -132,7 +132,7 @@ class ProposalForm(forms.ModelForm):
 
         # Limit tracks to active ones for the current year
         self.fields["track"].queryset = Track.objects.filter(
-            conference_year=CURRENT_YEAR, is_active=True,
+            conference_year=current_year(), is_active=True,
         ).order_by("display_order", "name")
 
         # Replace duration IntegerField with a select based on allowed values

@@ -42,6 +42,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 INSTALLED_APPS = [
     "home",
     "search",
+    "editions",
     "accounts",
     "tickets",
     "cfp",

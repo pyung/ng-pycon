@@ -17,6 +17,8 @@ from functools import wraps
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
 
+from editions.current import current_year
+
 from .roles import Role, roles_for
 
 
@@ -27,7 +29,7 @@ def attach_roles(view_func):
     def _wrapped(request, *args, **kwargs):
         if not hasattr(request, "roles"):
             request.roles = roles_for(request.user)
-            request.role_year = _current_year()
+            request.role_year = current_year()
         return view_func(request, *args, **kwargs)
 
     return _wrapped
@@ -47,7 +49,7 @@ def role_required(*roles, year=None):
             if not request.user.is_authenticated:
                 return redirect("login")
 
-            resolved_year = year if year is not None else _current_year()
+            resolved_year = year if year is not None else current_year()
             held = roles_for(request.user, resolved_year)
 
             if not held.has(*roles):
@@ -64,8 +66,3 @@ def role_required(*roles, year=None):
         return _wrapped
 
     return decorator
-
-
-def _current_year():
-    from pyconng.context_processors import CURRENT_YEAR
-    return CURRENT_YEAR

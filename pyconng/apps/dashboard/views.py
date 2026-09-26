@@ -11,7 +11,7 @@ from django.urls import reverse
 from wagtail.models import Site
 
 from home.models import HomePage, SponsorPage
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from accounts.roles import roles_for
 
@@ -35,7 +35,7 @@ def _get_cfp_open():
 
 def _get_current_year_home_page(request):
     """
-    Resolve the live HomePage for CURRENT_YEAR (same strategy as navigation_context).
+    Resolve the live HomePage for current_year() (same strategy as navigation_context).
     """
     site = Site.find_for_request(request)
     if not site:
@@ -45,7 +45,7 @@ def _get_current_year_home_page(request):
     home_page = None
 
     if isinstance(root_page, HomePage):
-        if root_page.conference_year is None or root_page.conference_year == CURRENT_YEAR:
+        if root_page.conference_year is None or root_page.conference_year == current_year():
             home_page = root_page
 
     if not home_page:
@@ -54,7 +54,7 @@ def _get_current_year_home_page(request):
             .type(HomePage)
             .live()
             .filter(
-                Q(conference_year__isnull=True) | Q(conference_year=CURRENT_YEAR)
+                Q(conference_year__isnull=True) | Q(conference_year=current_year())
             )
             .first()
         )
@@ -65,7 +65,7 @@ def _get_current_year_home_page(request):
         home_page = (
             HomePage.objects.live()
             .filter(
-                Q(conference_year__isnull=True) | Q(conference_year=CURRENT_YEAR)
+                Q(conference_year__isnull=True) | Q(conference_year=current_year())
             )
             .first()
         )
@@ -100,7 +100,7 @@ def dashboard(request):
     if not request.user.is_authenticated:
         return redirect(reverse("login") + f"?next={request.path}")
 
-    roles = roles_for(request.user, CURRENT_YEAR)
+    roles = roles_for(request.user, current_year())
 
     cfp_context = None
     if roles.is_cfp_reviewer:
@@ -120,7 +120,7 @@ def dashboard(request):
     sponsor_page = _get_current_year_sponsor_page(request)
 
     context = {
-        "conference_year": CURRENT_YEAR,
+        "conference_year": current_year(),
         "roles": roles,
         "grant_application": grant_application,
         "grant_open": grant_open,

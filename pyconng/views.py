@@ -4,7 +4,7 @@ from django.conf import settings
 from django.template.loader import get_template
 from wagtail.models import Page, Site
 from home.models import HomePage
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 import os
 
 ARCHIVE_DIR = os.path.join(settings.BASE_DIR, 'archives')
@@ -44,7 +44,7 @@ def year_page_serve(request, year, path=''):
     4. Raise 404 (no fallback to current homepage for archived years)
     """
     # 1) Prevent accessing current year via /year URL - redirect to root
-    if year == CURRENT_YEAR:
+    if year == current_year():
         redirect_path = f"/{path}" if path else "/"
         return redirect(redirect_path, permanent=False)
     

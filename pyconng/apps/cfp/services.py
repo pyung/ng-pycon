@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Avg
 from django.utils import timezone
 
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from .models import (
     CFPSettings,
@@ -40,7 +40,7 @@ class CFPService:
     def get_current_cfp():
         """Return CFP settings for the current year, auto-closing if needed."""
         try:
-            cfp = CFPSettings.objects.get(conference_year=CURRENT_YEAR)
+            cfp = CFPSettings.objects.get(conference_year=current_year())
             if cfp.status == CFPSettings.STATUS_OPEN and cfp.is_past_deadline:
                 cfp.status = CFPSettings.STATUS_CLOSED
                 cfp.save()
@@ -69,7 +69,7 @@ class CFPService:
         """Create or update this user's speaker profile for the current year."""
         speaker, created = Speaker.objects.get_or_create(
             user=user,
-            conference_year=CURRENT_YEAR,
+            conference_year=current_year(),
             defaults={
                 "full_name": full_name,
                 "bio": bio,
@@ -93,7 +93,7 @@ class CFPService:
         if not user or not user.is_authenticated:
             return None
         return Speaker.objects.filter(
-            user=user, conference_year=conference_year or CURRENT_YEAR,
+            user=user, conference_year=conference_year or current_year(),
         ).first()
 
     # ------------------------------------------------------------------
@@ -256,7 +256,7 @@ class CFPService:
     def send_decision_emails(proposal_ids, template_type, conference_year=None):
         from emails.services import send_email
 
-        year = conference_year or CURRENT_YEAR
+        year = conference_year or current_year()
         try:
             template = EmailTemplate.objects.get(
                 template_type=template_type, conference_year=year,
@@ -300,7 +300,7 @@ class CFPService:
 
     @staticmethod
     def export_accepted_talks(conference_year=None, fmt="csv"):
-        year = conference_year or CURRENT_YEAR
+        year = conference_year or current_year()
         proposals = (
             Proposal.objects.filter(
                 conference_year=year,
@@ -340,7 +340,7 @@ class CFPService:
 
     @staticmethod
     def get_dashboard_stats(conference_year=None):
-        year = conference_year or CURRENT_YEAR
+        year = conference_year or current_year()
         qs = Proposal.objects.filter(conference_year=year)
 
         stats = {

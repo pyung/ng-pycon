@@ -27,6 +27,8 @@ like Organizer is expressed.
 from django.db import models
 from django.db.models import Q
 
+from editions.current import current_year
+
 
 class Role(models.TextChoices):
     # --- Derived from records; never stored as an assignment ---
@@ -180,8 +182,7 @@ def roles_for(user, year=None):
         return RoleSet()
 
     if year is None:
-        from pyconng.context_processors import CURRENT_YEAR
-        year = CURRENT_YEAR
+        year = current_year()
 
     found = _granted(user, year) | _derived(user, year)
 
@@ -205,8 +206,7 @@ def users_with_role(role, year=None):
     from .models import RoleAssignment
 
     if year is None:
-        from pyconng.context_processors import CURRENT_YEAR
-        year = CURRENT_YEAR
+        year = current_year()
 
     holders = (
         RoleAssignment.objects

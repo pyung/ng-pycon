@@ -9,7 +9,7 @@ from django.db import models
 from django.db.models import F, Sum
 from django.utils import timezone
 
-from pyconng.context_processors import CURRENT_YEAR
+from editions.current import current_year
 
 from .models import (
     GrantReviewerAssignment,
@@ -26,7 +26,7 @@ class GrantService:
     def get_current_settings():
         """Return Grant settings for the current year."""
         try:
-            settings_obj = GrantSettings.objects.get(conference_year=CURRENT_YEAR)
+            settings_obj = GrantSettings.objects.get(conference_year=current_year())
             if settings_obj.status == GrantSettings.STATUS_OPEN and settings_obj.is_past_deadline:
                 settings_obj.status = GrantSettings.STATUS_CLOSED
                 settings_obj.save()
@@ -47,7 +47,7 @@ class GrantService:
             return None
         try:
             return TravelGrantApplication.objects.get(
-                user=user, conference_year=CURRENT_YEAR,
+                user=user, conference_year=current_year(),
             )
         except TravelGrantApplication.DoesNotExist:
             return None
@@ -62,7 +62,7 @@ class GrantService:
 
         latest = (
             Proposal.objects
-            .filter(speaker__user=user, conference_year=CURRENT_YEAR)
+            .filter(speaker__user=user, conference_year=current_year())
             .order_by("-submitted_at")
             .first()
         )
@@ -81,7 +81,7 @@ class GrantService:
     @staticmethod
     def get_dashboard_stats():
         """Return summary metrics for the admin dashboard."""
-        qs = TravelGrantApplication.objects.filter(conference_year=CURRENT_YEAR)
+        qs = TravelGrantApplication.objects.filter(conference_year=current_year())
         stats = {
             "total": qs.exclude(status=TravelGrantApplication.STATUS_DRAFT).count(),
             "submitted": qs.filter(status=TravelGrantApplication.STATUS_SUBMITTED).count(),
@@ -184,7 +184,7 @@ class GrantService:
     def export_approved_grants(fmt="csv"):
         """Export approved grants as CSV."""
         applications = TravelGrantApplication.objects.filter(
-            conference_year=CURRENT_YEAR,
+            conference_year=current_year(),
             status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID],
         ).select_related("user").order_by("user__email")
 

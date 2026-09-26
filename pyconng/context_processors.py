@@ -1,120 +1,103 @@
 """
-Context processors for PyCon Nigeria website
+Context processors for PyCon Nigeria.
+
+Edition data comes from the editions app rather than constants in this module,
+so opening a new year is an admin change instead of a deploy. The template
+context keys are unchanged: templates carry on reading ``conference_year``,
+``conference_theme``, ``conference_year_info``, ``available_years``,
+``current_year``, ``is_current_year``, ``is_year_specific_url`` and
+``base_template``.
 """
+
+import logging
+import re
+
 from django.conf import settings
 from django.db.models import Q
 from django.template.loader import get_template
 from django.urls import reverse
 from wagtail.models import Site
-import re
 
-# Available conference years and their themes
-CONFERENCE_YEARS = {
-    2024: {
-        'theme': '2024',
-        'name': 'Tech Innovation',
-        'description': 'Clean, geometric, tech-focused design',
-        'colors': ['#2563eb', '#059669', '#f59e0b'],
-        'is_current': False,
-    },
-    2025: {
-        'theme': '2025', 
-        'name': 'Creative Community',
-        'description': 'Organic, playful, community-focused design',
-        'colors': ['#7c3aed', '#ec4899', '#ea580c'],
-        'is_current': False,
-    },
-    2026: {
-        'theme': '2026', 
-        'name': 'Future Forward',
-        'description': 'Clean, modern, professional, forward-looking design',
-        'colors': ['#14b8a6', '#3b82f6', '#f97316'],
-        'is_current': True,
-    }
-}
+from editions.current import (
+    current_year,
+    edition_for_year,
+    known_years,
+    published_editions,
+)
 
-CURRENT_YEAR = 2026
-DEFAULT_YEAR = CURRENT_YEAR
+logger = logging.getLogger(__name__)
+
+#: Matches a year-prefixed path such as /2024/ or /2025/schedule/
+YEAR_URL_RE = re.compile(r"^/(\d{4})/")
+
+
+def _resolve_year(path):
+    """
+    The edition a request addresses.
+
+    Returns ``(year, url_named_a_year)``. An unrecognised year in the URL falls
+    back to the current edition, but still counts as a year-specific URL -- the
+    behaviour the hard-coded version had.
+    """
+    match = YEAR_URL_RE.match(path)
+    year = None
+    if match:
+        year = int(match.group(1))
+        if year not in known_years():
+            year = None
+    if year is None:
+        year = current_year()
+    return year, match is not None
+
 
 def conference_context(request):
-    """
-    Add conference year and theme information to template context
-    """
-    # Extract year from URL path
-    year = None
-    path = request.path
-    
-    # Match pattern like /2024/ or /2025/something
-    year_match = re.match(r'^/(\d{4})/', path)
-    if year_match:
-        try:
-            year = int(year_match.group(1))
-        except ValueError:
-            year = None
-    
-    # If no year in URL (root URL) or invalid year, use current year
-    if year is None or year not in CONFERENCE_YEARS:
-        year = CURRENT_YEAR
-    
-    year_info = CONFERENCE_YEARS.get(year, CONFERENCE_YEARS[CURRENT_YEAR])
-    
-    # Determine if this is a year-specific URL or root URL
-    is_year_specific_url = year_match is not None
-    
-    # Determine which base template to use for this year.
-    # Falls back to "base.html" if no year-specific base exists.
+    """Edition year, theme and palette for the requested URL."""
+    year, is_year_specific_url = _resolve_year(request.path)
+
+    edition = edition_for_year(year)
+    if edition is None:
+        edition = edition_for_year(current_year())
+
+    # Fall back to base.html when a theme has no dedicated base template.
     base_template = f"base_{year}.html"
     try:
         get_template(base_template)
     except Exception:
         base_template = "base.html"
-    
-    context = {
-        'conference_year': year,
-        'conference_theme': year_info['theme'],
-        'conference_year_info': year_info,
-        'available_years': CONFERENCE_YEARS,
-        'current_year': CURRENT_YEAR,
-        'is_current_year': year == CURRENT_YEAR,
-        'is_year_specific_url': is_year_specific_url,  # True for /2024/, False for /
-        'base_template': base_template,  # e.g. "base_2026.html" or "base.html"
+
+    now_year = current_year()
+    return {
+        "conference_year": year,
+        "conference_theme": edition.theme if edition else None,
+        "conference_year_info": edition,
+        "available_years": published_editions(),
+        "current_year": now_year,
+        "current_edition": edition if year == now_year else edition_for_year(now_year),
+        "is_current_year": year == now_year,
+        "is_year_specific_url": is_year_specific_url,
+        "base_template": base_template,
     }
-    
-    return context
+
 
 def site_context(request):
-    """
-    Add general site information to template context
-    """
+    """General site information."""
     return {
-        'site_name': 'PyCon Nigeria',
-        'site_tagline': 'The premier Python conference in Nigeria',
-        'debug': settings.DEBUG,
+        "site_name": "PyCon Nigeria",
+        "site_tagline": "The premier Python conference in Nigeria",
+        "debug": settings.DEBUG,
     }
 
 
 def navigation_context(request):
     """
-    Add navigation menu items to template context based on the current year.
-    Gets navigation from HomePage - current year has conference_year=None/blank,
-    archived years have conference_year set to the year.
+    Navigation menu for the edition this URL addresses.
+
+    The current edition's homepage is the one with ``conference_year`` unset or
+    equal to the current year; archived years have it set explicitly.
     """
-    # Extract year from URL path (same logic as conference_context)
-    year = None
-    path = request.path
-    
-    # Match pattern like /2024/ or /2025/something
-    year_match = re.match(r'^/(\d{4})/', path)
-    if year_match:
-        try:
-            year = int(year_match.group(1))
-        except ValueError:
-            year = None
-    
-    # If no year in URL (root URL) or invalid year, use current year
-    if year is None or year not in CONFERENCE_YEARS:
-        year = CURRENT_YEAR
-    
+    year, _ = _resolve_year(request.path)
+    now_year = current_year()
+
     navigation_items = None
     page_year = None
     home_page = None
@@ -124,95 +107,60 @@ def navigation_context(request):
         if site:
             from home.models import HomePage
 
-            if year == CURRENT_YEAR:
-                # For current year, check if root_page itself is a HomePage (most common case)
-                # The site's root_page is typically the current year's homepage
+            if year == now_year:
                 root_page = site.root_page.specific
-                if isinstance(root_page, HomePage):
-                    # Check if this root homepage is for the current year
-                    if (root_page.conference_year is None or 
-                        root_page.conference_year == CURRENT_YEAR):
-                        home_page = root_page
-                    else:
-                        home_page = None
-                else:
-                    home_page = None
-                
-                # If root_page is not the current year homepage, look for children
+                if isinstance(root_page, HomePage) and (
+                    root_page.conference_year is None
+                    or root_page.conference_year == now_year
+                ):
+                    home_page = root_page
+
                 if not home_page:
-                    home_page = (
+                    child = (
                         site.root_page.get_children()
                         .type(HomePage)
                         .live()
                         .filter(
-                            # Current year homepage: conference_year is NULL/blank OR equals CURRENT_YEAR
-                            Q(conference_year__isnull=True) | 
-                            Q(conference_year=CURRENT_YEAR)
+                            Q(conference_year__isnull=True)
+                            | Q(conference_year=now_year)
                         )
                         .first()
                     )
-                
-                # If still not found, try any HomePage with matching conference_year
+                    home_page = child.specific if child else None
+
                 if not home_page:
                     home_page = (
-                        HomePage.objects
-                        .live()
+                        HomePage.objects.live()
                         .filter(
-                            Q(conference_year__isnull=True) | 
-                            Q(conference_year=CURRENT_YEAR)
+                            Q(conference_year__isnull=True)
+                            | Q(conference_year=now_year)
                         )
                         .first()
                     )
-                
-                # Final fallback: if root_page is a HomePage, use it regardless of conference_year
-                # This handles cases where the site root might be set to a different year
+
+                # Last resort: the site root, whatever year it claims.
                 if not home_page and isinstance(root_page, HomePage):
                     home_page = root_page
-                
-                if home_page:
-                    # Ensure we have the specific instance (root_page.specific is already specific, but children need it)
-                    if not isinstance(home_page, HomePage):
-                        home_page = home_page.specific
-                    navigation_items = home_page.navigation_menu_items
-                    page_year = home_page.conference_year or CURRENT_YEAR
             else:
-                # For archived years, get HomePage where conference_year matches the year
                 home_page = (
-                    HomePage.objects
-                    .live()
-                    .filter(conference_year=year)
-                    .first()
+                    HomePage.objects.live().filter(conference_year=year).first()
+                    or HomePage.objects.live().filter(slug=str(year)).first()
                 )
-                
-                # Also try by slug as fallback
-                if not home_page:
-                    home_page = (
-                        HomePage.objects
-                        .live()
-                        .filter(slug=str(year))
-                        .first()
-                    )
-                
-                if home_page:
+
+            if home_page:
+                if not isinstance(home_page, HomePage):
                     home_page = home_page.specific
-                    navigation_items = home_page.navigation_menu_items
-                    page_year = home_page.conference_year or year
-    except Exception as e:  # noqa: BLE001
-        # If there's any error, navigation_items will remain None
-        # In production, you might want to log this
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error getting navigation for year {year}: {e}")
+                navigation_items = home_page.navigation_menu_items
+                page_year = home_page.conference_year or year
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Error getting navigation for year %s: %s", year, exc)
 
     nav_login_href = reverse("login")
     nav_login_label = "Sign In"
     if home_page is not None:
         try:
-            from home.models import HomePage as HomePageModel
-
-            if isinstance(home_page, HomePageModel):
-                nav_login_href = home_page.get_login_href(request)
-                nav_login_label = home_page.get_login_label()
+            nav_login_href = home_page.get_login_href(request)
+            nav_login_label = home_page.get_login_label()
         except Exception:  # noqa: BLE001
             pass
 
