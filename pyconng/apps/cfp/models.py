@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -43,6 +44,21 @@ class CFPSettings(models.Model):
     guidelines = RichTextField(
         blank=True,
         help_text="CFP guidelines shown on the landing page",
+    )
+    anonymise_review = models.BooleanField(
+        default=True,
+        help_text=(
+            "Hide speaker names, organisations, countries and bios from reviewers, "
+            "so proposals are judged on their content. Chairs always see identities."
+        ),
+    )
+    confirmation_deadline = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Accepted speakers must confirm by this date. Run "
+            "'manage.py expire_unconfirmed_talks' afterwards to release the slots."
+        ),
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,6 +142,43 @@ class Speaker(models.Model):
     organisation = models.CharField(max_length=200, blank=True)
     country = models.CharField(max_length=100)
     first_time_speaker = models.BooleanField(default=False)
+    photo = models.ForeignKey(
+        "wagtailimages.Image",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="Headshot for the programme and the speakers page.",
+    )
+    photo_alt = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Describe the photo for screen readers. Defaults to the speaker's name.",
+    )
+
+    # --- Onboarding, collected once a talk is confirmed -------------------
+    TSHIRT_SIZES = [
+        ("xs", "XS"), ("s", "S"), ("m", "M"), ("l", "L"),
+        ("xl", "XL"), ("xxl", "2XL"), ("xxxl", "3XL"),
+    ]
+    tshirt_size = models.CharField(
+        max_length=8, blank=True, choices=TSHIRT_SIZES,
+    )
+    dietary_requirements = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Anything the caterers need to know.",
+    )
+    travel_support_needed = models.BooleanField(
+        default=False,
+        help_text="Whether they need help getting to the conference.",
+    )
+    accessibility_needs = models.TextField(
+        blank=True,
+        help_text="Anything we should arrange so they can present comfortably.",
+    )
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
+
     conference_year = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -136,6 +189,14 @@ class Speaker(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
+
+    @property
+    def photo_alt_text(self):
+        return self.photo_alt or self.full_name
+
+    @property
+    def onboarding_complete(self):
+        return self.onboarding_completed_at is not None
 
     @property
     def email(self):
@@ -164,6 +225,7 @@ class Proposal(models.Model):
     STATUS_WAITLISTED = "waitlisted"
     STATUS_WITHDRAWN = "withdrawn"
     STATUS_CONFIRMED = "confirmed"
+    STATUS_LAPSED = "lapsed"
 
     STATUS_CHOICES = [
         (STATUS_DRAFT, "Draft"),
@@ -174,6 +236,7 @@ class Proposal(models.Model):
         (STATUS_WAITLISTED, "Waitlisted"),
         (STATUS_WITHDRAWN, "Withdrawn"),
         (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_LAPSED, "Lapsed — not confirmed in time"),
     ]
 
     # -- Talk formats --
@@ -229,12 +292,20 @@ class Proposal(models.Model):
     special_requirements = models.TextField(
         blank=True, help_text="Any special requirements",
     )
+    notes_to_reviewers = models.TextField(
+        blank=True,
+        help_text=(
+            "Anything reviewers should know that does not belong in the public "
+            "abstract. Never shown publicly."
+        ),
+    )
 
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT,
     )
     conference_year = models.IntegerField()
     submitted_at = models.DateTimeField(null=True, blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -264,11 +335,87 @@ class Proposal(models.Model):
         reviews = Review.objects.filter(assignment__proposal=self)
         if not reviews.exists():
             return None
-        return reviews.aggregate(avg=models.Avg("score"))["avg"]
+        return reviews.aggregate(avg=models.Avg("weighted_score"))["avg"]
 
     @property
     def review_count(self):
         return Review.objects.filter(assignment__proposal=self).count()
+
+
+class ProposalCoSpeaker(models.Model):
+    """
+    Somebody invited to co-present a proposal.
+
+    Recorded by email rather than requiring an account up front: a submitter
+    should never be blocked near a deadline waiting for a colleague to register.
+    The row links itself to an account the moment one exists for that address, so
+    the co-speaker then gets the dashboard and their own onboarding form without
+    anyone re-typing anything.
+    """
+
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="co_speakers",
+    )
+    email = models.EmailField(help_text="The address the invitation went to.")
+    display_name = models.CharField(
+        max_length=200,
+        help_text="How the name should read in the programme before they sign up.",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="cfp_co_speaker_invites",
+        help_text="Linked automatically once an account exists for this address.",
+    )
+    invited_at = models.DateTimeField(auto_now_add=True)
+    linked_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the invitation found an account.",
+    )
+
+    class Meta:
+        ordering = ["invited_at"]
+        verbose_name = "Co-speaker"
+        verbose_name_plural = "Co-speakers"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["proposal", "email"], name="unique_co_speaker_per_proposal",
+            ),
+        ]
+        indexes = [models.Index(fields=["email"])]
+
+    def __str__(self):
+        state = "linked" if self.user_id else "pending"
+        return f"{self.display_name} <{self.email}> ({state})"
+
+    @property
+    def is_pending(self):
+        return self.user_id is None
+
+    @property
+    def name(self):
+        """
+        Their name as it should read. Prefers the linked account's speaker
+        profile, so a later correction there flows through.
+        """
+        if self.user_id:
+            profile = Speaker.objects.filter(
+                user_id=self.user_id, conference_year=self.proposal.conference_year,
+            ).first()
+            if profile and profile.full_name:
+                return profile.full_name
+            return self.user.get_full_name() or self.display_name
+        return self.display_name
+
+    def link_to(self, user):
+        """Attach an account to this invitation."""
+        from django.utils import timezone
+
+        self.user = user
+        self.linked_at = timezone.now()
+        self.save(update_fields=["user", "linked_at"])
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -332,14 +479,41 @@ class ReviewerAssignment(models.Model):
 
 
 class Review(models.Model):
-    """A reviewer's score and internal comments for a proposal."""
+    """
+    A reviewer's scores and internal comments for a proposal.
+
+    Four dimensions rather than one overall mark, so two reviewers who both say
+    "4" can be seen to disagree about *why* -- and so a chair can weigh a
+    brilliant idea from a nervous first-timer against a safe talk from a
+    practised speaker. Mirrors the rubric travel grants already use.
+    """
+
+    DIMENSIONS = ("relevance", "clarity", "depth", "speaker_readiness")
 
     assignment = models.OneToOneField(
         ReviewerAssignment, on_delete=models.CASCADE, related_name="review",
     )
-    score = models.IntegerField(
+    relevance = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Score from 1 (weak) to 5 (strong)",
+        help_text="How much this audience wants this talk (1-5).",
+    )
+    clarity = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="How clearly the proposal is written and scoped (1-5).",
+    )
+    depth = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Substance: is there something real here (1-5).",
+    )
+    speaker_readiness = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Confidence they can deliver it well (1-5).",
+    )
+    weighted_score = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=Decimal("0"),
+        help_text="Auto-calculated mean of the four dimensions.",
     )
     comments = models.TextField(help_text="Internal review comments")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -347,6 +521,13 @@ class Review(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        total = sum(getattr(self, d) or 0 for d in self.DIMENSIONS)
+        self.weighted_score = (Decimal(total) / Decimal(len(self.DIMENSIONS))).quantize(
+            Decimal("0.01"),
+        )
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Review of '{self.assignment.proposal.title}' by {self.assignment.reviewer}"

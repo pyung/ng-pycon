@@ -65,8 +65,8 @@ class ReviewerAssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ["assignment", "score", "created_at", "updated_at"]
-    list_filter = ["score"]
-    readonly_fields = ["created_at", "updated_at"]
+    list_display = ["assignment", "weighted_score", "relevance", "clarity", "depth", "speaker_readiness", "updated_at"]
+    list_filter = ["relevance", "clarity", "depth", "speaker_readiness"]
+    readonly_fields = ["weighted_score", "created_at", "updated_at"]
 
 

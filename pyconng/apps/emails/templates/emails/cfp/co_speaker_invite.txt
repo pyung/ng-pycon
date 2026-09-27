@@ -1,0 +1,20 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ co_speaker_name }},
+
+{{ lead_speaker_name }} has added you as a co-speaker on a proposal for
+PyCon Nigeria {{ conference_year }}: "{{ proposal_title }}".
+{% if needs_account %}
+You do not have an account with us yet. Create one with this email address and
+the proposal will appear in your dashboard automatically - you will then be able
+to see its status and fill in your own speaker details if it is accepted.
+
+Create your account here:
+{{ signup_url }}
+{% else %}
+View the proposal here:
+{{ proposal_url }}
+{% endif %}
+If you were added by mistake, reply to this email and we will take your name off it.
+
+Best regards,
+PyCon Nigeria Team
+{% endblock %}

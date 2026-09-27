@@ -1,0 +1,99 @@
+{% extends base_template %}
+{% block body_class %}template-cfp-admin-schedule{% endblock %}
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-10 px-4">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold text-gray-900">Build the schedule</h1>
+        <p class="mt-2 text-gray-600">
+            Place accepted talks into a room and a time, then publish. Clashes are listed
+            below and update as you go.
+        </p>
+
+        {% if clashes %}
+        <div class="mt-6 rounded-xl border border-red-200 bg-red-50 p-5">
+            <h2 class="text-sm font-semibold text-red-800 uppercase tracking-wide mb-2">
+                {{ clashes|length }} clash{{ clashes|length|pluralize:"es" }} to fix
+            </h2>
+            <ul class="space-y-1.5 list-none p-0 m-0">
+                {% for clash in clashes %}
+                <li class="text-sm text-red-900">
+                    <span class="font-mono text-xs uppercase mr-1">{{ clash.kind }}</span>{{ clash.message }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-5 py-3">
+            <p class="text-sm text-teal-900">No clashes. Nothing double-booked, nobody in two rooms at once.</p>
+        </div>
+        {% endif %}
+
+        {% if unscheduled %}
+        <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3">
+            <p class="text-sm text-amber-900">
+                <strong>{{ unscheduled|length }}</strong> accepted talk{{ unscheduled|length|pluralize }}
+                still without a room or time.
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="mt-6 overflow-x-auto bg-white rounded-xl border border-gray-200">
+            <table class="w-full border-collapse min-w-[52rem]">
+                <caption class="sr-only">Accepted talks with their room, time and published state</caption>
+                <thead>
+                    <tr class="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th scope="col" class="px-4 py-3">Talk</th>
+                        <th scope="col" class="px-4 py-3 w-48">Room</th>
+                        <th scope="col" class="px-4 py-3 w-56">Starts</th>
+                        <th scope="col" class="px-4 py-3 w-24">Live</th>
+                        <th scope="col" class="px-4 py-3 w-20"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for talk in talks %}
+                    <tr class="border-t border-gray-100 {% if not talk.is_scheduled %}bg-amber-50/40{% endif %}">
+                        <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="talk_id" value="{{ talk.pk }}">
+                        <td class="px-4 py-3 align-top">
+                            <p class="font-medium text-gray-900">{{ talk.title }}</p>
+                            <p class="text-xs text-gray-500">{{ talk.speaker_display }}{% if talk.track_name %} &middot; {{ talk.track_name }}{% endif %} &middot; {{ talk.effective_duration }} min</p>
+                        </td>
+                        <td class="px-4 py-3 align-top">
+                            <label class="sr-only" for="room-{{ talk.pk }}">Room for {{ talk.title }}</label>
+                            <select id="room-{{ talk.pk }}" name="room" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                <option value="">— not placed —</option>
+                                {% for room in rooms %}
+                                <option value="{{ room.pk }}" {% if talk.room_id == room.pk %}selected{% endif %}>{{ room.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="px-4 py-3 align-top">
+                            <label class="sr-only" for="starts-{{ talk.pk }}">Start time for {{ talk.title }}</label>
+                            <input id="starts-{{ talk.pk }}" type="datetime-local" name="starts_at"
+                                   value="{{ talk.starts_at|date:'Y-m-d\\TH:i' }}"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                        </td>
+                        <td class="px-4 py-3 align-top">
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="is_published" {% if talk.is_published %}checked{% endif %}
+                                       class="w-4 h-4 rounded border-gray-300">
+                                <span class="sr-only">Published</span>
+                            </label>
+                        </td>
+                        <td class="px-4 py-3 align-top">
+                            <button type="submit" class="px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded hover:bg-gray-800">Save</button>
+                        </td>
+                        </form>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-4 py-6 text-gray-500">
+                        No talks yet. Build the programme from accepted proposals first.
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

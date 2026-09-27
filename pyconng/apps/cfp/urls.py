@@ -38,6 +38,9 @@ urlpatterns = [
         name="proposal_confirm",
     ),
 
+    # --- Speaker onboarding (after acceptance) --------------------------
+    path("onboarding/", views.cfp_onboarding, name="onboarding"),
+
     # --- Reviewer ---------------------------------------------------------
     path("review/", views.review_list, name="review_list"),
     path(
@@ -62,4 +65,5 @@ urlpatterns = [
     path("admin/decisions/", views.admin_decisions, name="admin_decisions"),
     path("admin/export/", views.admin_export, name="admin_export"),
     path("admin/email/", views.admin_email, name="admin_email"),
+    path("admin/schedule/", views.admin_schedule, name="admin_schedule"),
 ]

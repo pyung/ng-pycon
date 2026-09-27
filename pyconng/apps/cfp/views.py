@@ -29,6 +29,8 @@ from .decorators import (
 )
 from .forms import (
     AssignReviewerForm,
+    CoSpeakerForm,
+    SpeakerOnboardingForm,
     BulkDecisionForm,
     BulkEmailForm,
     ProposalForm,
@@ -85,10 +87,11 @@ def cfp_submit(request):
         speaker_initial = {"full_name": request.user.get_full_name()}
 
     if request.method == "POST":
-        speaker_form = SpeakerForm(request.POST)
+        speaker_form = SpeakerForm(request.POST, request.FILES)
         proposal_form = ProposalForm(request.POST, cfp_settings=cfp)
+        co_form = CoSpeakerForm(request.POST)
 
-        if speaker_form.is_valid() and proposal_form.is_valid():
+        if speaker_form.is_valid() and proposal_form.is_valid() and co_form.is_valid():
             sp = CFPService.get_or_create_speaker(
                 user=request.user,
                 full_name=speaker_form.cleaned_data["full_name"],
@@ -99,6 +102,8 @@ def cfp_submit(request):
                     "first_time_speaker", False,
                 ),
             )
+
+            _attach_speaker_photo(sp, speaker_form)
 
             # Build proposal
             proposal = proposal_form.save(commit=False)
@@ -112,6 +117,9 @@ def cfp_submit(request):
                 proposal.submitted_at = timezone.now()
 
             proposal.save()
+            CFPService.set_co_speakers(
+                proposal, co_form.cleaned_data["co_speakers"], request=request,
+            )
 
             if action == "submit":
                 CFPService.create_snapshot(proposal, "submission")
@@ -144,10 +152,12 @@ def cfp_submit(request):
     else:
         speaker_form = SpeakerForm(initial=speaker_initial)
         proposal_form = ProposalForm(cfp_settings=cfp)
+        co_form = CoSpeakerForm()
 
     return render(request, "cfp/submit.html", {
         "speaker_form": speaker_form,
         "proposal_form": proposal_form,
+        "co_form": co_form,
         "cfp": cfp,
         "conference_year": current_year(),
     })
@@ -210,12 +220,13 @@ def cfp_proposal_edit(request, proposal_id):
         return redirect("cfp:proposal_detail", proposal_id=proposal.pk)
 
     if request.method == "POST":
-        speaker_form = SpeakerForm(request.POST)
+        speaker_form = SpeakerForm(request.POST, request.FILES)
         proposal_form = ProposalForm(
             request.POST, instance=proposal, cfp_settings=cfp,
         )
+        co_form = CoSpeakerForm(request.POST)
 
-        if speaker_form.is_valid() and proposal_form.is_valid():
+        if speaker_form.is_valid() and proposal_form.is_valid() and co_form.is_valid():
             # Update the profile this proposal was submitted under
             speaker = proposal.speaker
             speaker.full_name = speaker_form.cleaned_data["full_name"]
@@ -226,8 +237,12 @@ def cfp_proposal_edit(request, proposal_id):
                 "first_time_speaker", False,
             )
             speaker.save()
+            _attach_speaker_photo(speaker, speaker_form)
 
             proposal = proposal_form.save()
+            CFPService.set_co_speakers(
+                proposal, co_form.cleaned_data["co_speakers"], request=request,
+            )
 
             # Snapshot the edit
             CFPService.create_snapshot(proposal, "edit")
@@ -257,10 +272,14 @@ def cfp_proposal_edit(request, proposal_id):
             "first_time_speaker": speaker.first_time_speaker,
         })
         proposal_form = ProposalForm(instance=proposal, cfp_settings=cfp)
+        co_form = CoSpeakerForm(
+            initial={"co_speakers": CoSpeakerForm.initial_for(proposal)},
+        )
 
     return render(request, "cfp/proposal_edit.html", {
         "speaker_form": speaker_form,
         "proposal_form": proposal_form,
+        "co_form": co_form,
         "proposal": proposal,
         "cfp": cfp,
         "conference_year": current_year(),
@@ -350,7 +369,10 @@ def review_detail(request, proposal_id):
 
     if existing_review:
         form = ReviewForm(initial={
-            "score": existing_review.score,
+            "relevance": existing_review.relevance,
+            "clarity": existing_review.clarity,
+            "depth": existing_review.depth,
+            "speaker_readiness": existing_review.speaker_readiness,
             "comments": existing_review.comments,
         })
     else:
@@ -361,8 +383,22 @@ def review_detail(request, proposal_id):
         "proposal": proposal,
         "form": form,
         "existing_review": existing_review,
+        "anonymise": _anonymise_for(request),
         "conference_year": current_year(),
     })
+
+
+def _anonymise_for(request):
+    """
+    Whether to hide speaker identity from this viewer.
+
+    On when the edition says so, and never for a chair: somebody has to be able
+    to spot a conflict of interest, and that is the chair's job.
+    """
+    cfp = CFPService.get_current_cfp()
+    if not cfp or not cfp.anonymise_review:
+        return False
+    return not request.roles.is_cfp_chair
 
 
 @require_POST
@@ -384,7 +420,10 @@ def review_score(request, proposal_id):
         review, created = Review.objects.update_or_create(
             assignment=assignment,
             defaults={
-                "score": form.cleaned_data["score"],
+                "relevance": form.cleaned_data["relevance"],
+                "clarity": form.cleaned_data["clarity"],
+                "depth": form.cleaned_data["depth"],
+                "speaker_readiness": form.cleaned_data["speaker_readiness"],
                 "comments": form.cleaned_data["comments"],
             },
         )
@@ -399,6 +438,7 @@ def review_score(request, proposal_id):
             "proposal": assignment.proposal,
             "form": form,
             "existing_review": getattr(assignment, "review", None),
+            "anonymise": _anonymise_for(request),
             "conference_year": current_year(),
         })
 
@@ -555,3 +595,139 @@ def admin_email(request):
         messages.error(request, "Invalid email data.")
 
     return redirect("cfp:admin_dashboard")
+
+
+def _attach_speaker_photo(speaker, speaker_form):
+    """
+    Store an uploaded headshot as a Wagtail image, so it sits in the same library
+    as every other image on the site and can be cropped by the same templates.
+    """
+    upload = speaker_form.cleaned_data.get("photo")
+    alt = speaker_form.cleaned_data.get("photo_alt", "")
+    if not upload:
+        if alt and alt != speaker.photo_alt:
+            speaker.photo_alt = alt
+            speaker.save(update_fields=["photo_alt", "updated_at"])
+        return speaker
+
+    from wagtail.images import get_image_model
+
+    image = get_image_model()(title=f"{speaker.full_name} ({speaker.conference_year})")
+    image.file = upload
+    image.save()
+    speaker.photo = image
+    speaker.photo_alt = alt or speaker.full_name
+    speaker.save(update_fields=["photo", "photo_alt", "updated_at"])
+    return speaker
+
+
+# ======================================================================
+# SPEAKER ONBOARDING
+# ======================================================================
+
+@login_required
+def cfp_onboarding(request):
+    """
+    Details we only need once a talk is going ahead: headshot, bio, t-shirt size,
+    dietary and accessibility needs.
+
+    Open to anyone with an accepted, confirmed or scheduled talk this edition --
+    including co-speakers, who need a t-shirt and a dinner as much as the lead.
+    """
+    year = current_year()
+    speaker = CFPService.get_speaker_for_user(request.user, year)
+
+    lead = Proposal.objects.filter(
+        speaker__user=request.user,
+        conference_year=year,
+        status__in=(Proposal.STATUS_ACCEPTED, Proposal.STATUS_CONFIRMED),
+    )
+    as_co_speaker = Proposal.objects.filter(
+        co_speakers__user=request.user,
+        conference_year=year,
+        status__in=(Proposal.STATUS_ACCEPTED, Proposal.STATUS_CONFIRMED),
+    )
+    proposals = (lead | as_co_speaker).distinct()
+
+    if not proposals.exists():
+        return render(request, "cfp/onboarding_not_yet.html", {
+            "conference_year": year,
+        }, status=403)
+
+    if speaker is None:
+        # A co-speaker may never have submitted anything themselves.
+        speaker = CFPService.get_or_create_speaker(
+            user=request.user,
+            full_name=request.user.get_full_name() or request.user.email,
+            bio="", organisation="", country="",
+        )
+
+    if request.method == "POST":
+        form = SpeakerOnboardingForm(request.POST, request.FILES, instance=speaker)
+        if form.is_valid():
+            speaker = form.save(commit=False)
+            speaker.onboarding_completed_at = timezone.now()
+            speaker.save()
+            messages.success(request, "Thank you — your speaker details are saved.")
+            return redirect("cfp:onboarding")
+    else:
+        form = SpeakerOnboardingForm(instance=speaker)
+
+    return render(request, "cfp/onboarding.html", {
+        "form": form,
+        "speaker": speaker,
+        "proposals": proposals,
+        "conference_year": year,
+    })
+
+
+# ======================================================================
+# CHAIR: SCHEDULE BUILDER
+# ======================================================================
+
+@role_required(Role.CFP_CHAIR)
+def admin_schedule(request):
+    """
+    Place accepted talks into rooms and times, and see what clashes.
+
+    Deliberately a form rather than drag-and-drop: the part that prevents real
+    mistakes is the clash check, not the dragging, and a form works on a laptop
+    at a planning meeting with poor wifi.
+    """
+    from program.models import Room, Talk
+    from program.services import schedule_grid
+
+    year = current_year()
+
+    if request.method == "POST":
+        talk = get_object_or_404(Talk, pk=request.POST.get("talk_id"), conference_year=year)
+        room_id = request.POST.get("room") or None
+        starts_at = request.POST.get("starts_at") or ""
+
+        talk.room = Room.objects.filter(pk=room_id, conference_year=year).first() if room_id else None
+        if starts_at:
+            parsed = timezone.datetime.fromisoformat(starts_at)
+            talk.starts_at = timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
+        else:
+            talk.starts_at = None
+        talk.is_published = bool(request.POST.get("is_published"))
+        talk.save(update_fields=["room", "starts_at", "is_published", "updated_at"])
+        messages.success(request, f"Updated “{talk.title}”.")
+        return redirect("cfp:admin_schedule")
+
+    talks = (
+        Talk.objects.for_year(year)
+        .select_related("room").prefetch_related("speakers")
+        .order_by("starts_at", "title")
+    )
+    rooms, grid = schedule_grid(year)
+
+    return render(request, "cfp/admin_schedule.html", {
+        "talks": talks,
+        "unscheduled": [t for t in talks if not t.is_scheduled],
+        "rooms": Room.objects.filter(conference_year=year, is_published=True),
+        "grid_rooms": rooms,
+        "schedule_days": grid,
+        "clashes": CFPService.schedule_clashes(year),
+        "conference_year": year,
+    })

@@ -1,9 +1,11 @@
+import re
+
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from editions.current import current_year
 
-from .models import Proposal, Review, Track
+from .models import Proposal, Review, Speaker, Track
 
 # ---------------------------------------------------------------------------
 # Shared Tailwind widget classes (consistent with the tickets app)
@@ -66,6 +68,17 @@ class SpeakerForm(forms.Form):
             "placeholder": "Country",
         }),
     )
+    photo = forms.ImageField(
+        required=False,
+        help_text="A headshot for the programme. JPEG or PNG, ideally square.",
+        widget=forms.ClearableFileInput(attrs={"class": TAILWIND_INPUT, "accept": "image/*"}),
+    )
+    photo_alt = forms.CharField(
+        max_length=200,
+        required=False,
+        help_text="Describe the photo for screen readers. Defaults to your name.",
+        widget=forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+    )
     first_time_speaker = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"class": TAILWIND_CHECKBOX}),
@@ -92,6 +105,7 @@ class ProposalForm(forms.ModelForm):
             "prior_delivery_link",
             "slides_url",
             "special_requirements",
+            "notes_to_reviewers",
         ]
         widgets = {
             "title": forms.TextInput(attrs={
@@ -107,6 +121,11 @@ class ProposalForm(forms.ModelForm):
                 "class": TAILWIND_TEXTAREA,
                 "rows": 6,
                 "placeholder": "Detailed description (for reviewers only)",
+            }),
+            "notes_to_reviewers": forms.Textarea(attrs={
+                "class": TAILWIND_TEXTAREA,
+                "rows": 3,
+                "placeholder": "Anything reviewers should know. Never shown publicly.",
             }),
             "track": forms.Select(attrs={"class": TAILWIND_SELECT}),
             "format": forms.Select(attrs={"class": TAILWIND_SELECT}),
@@ -152,17 +171,35 @@ class ProposalForm(forms.ModelForm):
 # Review form (reviewer scores a proposal)
 # ---------------------------------------------------------------------------
 
-class ReviewForm(forms.Form):
-    score = forms.IntegerField(
+def _dimension_field(label, help_text):
+    return forms.IntegerField(
         min_value=1,
         max_value=5,
+        label=label,
+        help_text=help_text,
         widget=forms.NumberInput(attrs={
-            "class": TAILWIND_INPUT,
-            "min": "1",
-            "max": "5",
-            "placeholder": "1-5",
+            "class": TAILWIND_INPUT, "min": "1", "max": "5", "placeholder": "1-5",
         }),
-        help_text="1 = weak, 5 = strong",
+    )
+
+
+class ReviewForm(forms.Form):
+    """
+    Four dimensions rather than one mark, so two reviewers who both say "4" can
+    be seen to disagree about why.
+    """
+
+    relevance = _dimension_field(
+        "Relevance", "How much this audience wants this talk.",
+    )
+    clarity = _dimension_field(
+        "Clarity", "How clearly the proposal is written and scoped.",
+    )
+    depth = _dimension_field(
+        "Depth", "Substance: is there something real here.",
+    )
+    speaker_readiness = _dimension_field(
+        "Speaker readiness", "Confidence they can deliver it well.",
     )
     comments = forms.CharField(
         widget=forms.Textarea(attrs={
@@ -249,3 +286,88 @@ class BulkEmailForm(forms.Form):
     def clean_proposal_ids(self):
         raw = self.cleaned_data["proposal_ids"]
         return [pid.strip() for pid in raw.split(",") if pid.strip()]
+
+
+# ---------------------------------------------------------------------------
+# Co-speakers
+# ---------------------------------------------------------------------------
+
+CO_SPEAKER_LINE = re.compile(r"^\s*(?P<name>[^<>]*?)\s*<\s*(?P<email>[^<>\s]+@[^<>\s]+)\s*>\s*$")
+
+
+class CoSpeakerForm(forms.Form):
+    """
+    Co-speakers, one per line as ``Name <email@example.com>``.
+
+    A textarea rather than a formset: submitters overwhelmingly have one or two
+    co-speakers and already know this notation from their mail client, and it
+    survives a page reload without JavaScript.
+    """
+
+    co_speakers = forms.CharField(
+        required=False,
+        label="Co-speakers",
+        help_text=(
+            "One per line, as Name <email@example.com>. They do not need an account "
+            "yet — we will invite them, and it links up when they sign up."
+        ),
+        widget=forms.Textarea(attrs={
+            "class": TAILWIND_TEXTAREA,
+            "rows": 3,
+            "placeholder": "Ada Obi <ada@example.com>",
+        }),
+    )
+
+    def clean_co_speakers(self):
+        raw = self.cleaned_data.get("co_speakers", "")
+        entries, problems, seen = [], [], set()
+        for number, line in enumerate(raw.splitlines(), start=1):
+            if not line.strip():
+                continue
+            match = CO_SPEAKER_LINE.match(line)
+            if not match:
+                problems.append(
+                    f"Line {number}: write it as Name <email@example.com>."
+                )
+                continue
+            email = match.group("email").strip().lower()
+            if email in seen:
+                problems.append(f"Line {number}: {email} is listed twice.")
+                continue
+            seen.add(email)
+            entries.append((email, match.group("name").strip()))
+        if problems:
+            raise forms.ValidationError(problems)
+        return entries
+
+    @staticmethod
+    def initial_for(proposal):
+        """Render existing co-speakers back into the textarea notation."""
+        return "\n".join(
+            f"{c.display_name} <{c.email}>" for c in proposal.co_speakers.all()
+        )
+
+
+# ---------------------------------------------------------------------------
+# Speaker onboarding (after a talk is confirmed)
+# ---------------------------------------------------------------------------
+
+class SpeakerOnboardingForm(forms.ModelForm):
+    class Meta:
+        model = Speaker
+        fields = [
+            "full_name", "bio", "organisation", "country",
+            "photo", "photo_alt",
+            "tshirt_size", "dietary_requirements",
+            "travel_support_needed", "accessibility_needs",
+        ]
+        widgets = {
+            "full_name": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "bio": forms.Textarea(attrs={"class": TAILWIND_TEXTAREA, "rows": 4}),
+            "organisation": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "country": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "photo_alt": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "tshirt_size": forms.Select(attrs={"class": TAILWIND_SELECT}),
+            "dietary_requirements": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "accessibility_needs": forms.Textarea(attrs={"class": TAILWIND_TEXTAREA, "rows": 3}),
+        }

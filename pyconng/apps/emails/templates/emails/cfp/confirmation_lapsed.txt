@@ -1,0 +1,12 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ speaker_name }},
+
+"{{ proposal_title }}" was accepted for PyCon Nigeria {{ conference_year }}, but
+we did not hear back by the confirmation deadline of {{ deadline }}, so the slot
+has been released to someone on the waitlist.
+
+If this is a mistake - and it often is, because these emails get buried - reply
+to this message today. We would much rather sort it out than lose your talk.
+
+Best regards,
+PyCon Nigeria Team
+{% endblock %}

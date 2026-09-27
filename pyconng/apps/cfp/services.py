@@ -86,6 +86,160 @@ class CFPService:
         return speaker
 
     @staticmethod
+    def schedule_clashes(year):
+        """
+        Everything wrong with the current grid.
+
+        Three checks, each a mistake that is invisible until the day:
+
+        * two talks in one room at overlapping times
+        * one speaker due in two rooms at once
+        * a talk scheduled outside the edition's own dates
+
+        Returns a list of ``{"kind", "message", "talks"}``.
+        """
+        from editions.current import edition_for_year
+        from program.models import Talk
+
+        scheduled = list(
+            Talk.objects.for_year(year).scheduled()
+            .select_related("room").prefetch_related("speakers")
+            .order_by("starts_at")
+        )
+        clashes = []
+
+        def overlaps(a, b):
+            return a.starts_at < b.ends_at and b.starts_at < a.ends_at
+
+        for i, first in enumerate(scheduled):
+            for second in scheduled[i + 1:]:
+                if not overlaps(first, second):
+                    continue
+                if first.room_id == second.room_id:
+                    clashes.append({
+                        "kind": "room",
+                        "message": (
+                            f"{first.room.name}: “{first.title}” and “{second.title}” "
+                            f"overlap at {first.starts_at:%a %H:%M}."
+                        ),
+                        "talks": [first, second],
+                    })
+                shared = {u.pk for u in first.speakers.all()} & {
+                    u.pk for u in second.speakers.all()
+                }
+                if shared:
+                    clashes.append({
+                        "kind": "speaker",
+                        "message": (
+                            f"A speaker is due in two rooms at once: “{first.title}” "
+                            f"and “{second.title}” at {first.starts_at:%a %H:%M}."
+                        ),
+                        "talks": [first, second],
+                    })
+
+        edition = edition_for_year(year)
+        if edition and edition.starts_on:
+            last_day = edition.ends_on or edition.starts_on
+            for talk in scheduled:
+                if not (edition.starts_on <= talk.day <= last_day):
+                    clashes.append({
+                        "kind": "date",
+                        "message": (
+                            f"“{talk.title}” is scheduled for {talk.day:%d %b}, outside "
+                            f"the conference dates ({edition.dates_display})."
+                        ),
+                        "talks": [talk],
+                    })
+
+        return clashes
+
+    @staticmethod
+    def set_co_speakers(proposal, entries, request=None):
+        """
+        Replace a proposal's co-speakers with ``entries`` of ``(email, name)``.
+
+        Links an account straight away where one exists for that address;
+        otherwise the row stays pending and an invitation goes out. Removing a
+        co-speaker from the form removes the row.
+
+        Never invites the submitting speaker to co-present their own talk.
+        """
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+
+        from .models import ProposalCoSpeaker
+
+        User = get_user_model()
+        own_email = (proposal.speaker.email or "").strip().lower()
+
+        wanted = {}
+        for raw_email, raw_name in entries:
+            email = (raw_email or "").strip().lower()
+            if not email or email == own_email:
+                continue
+            wanted[email] = (raw_name or "").strip() or email
+
+        existing = {c.email.lower(): c for c in proposal.co_speakers.all()}
+
+        for email in set(existing) - set(wanted):
+            existing[email].delete()
+
+        invited = []
+        for email, name in wanted.items():
+            account = User.objects.filter(email__iexact=email).first()
+            row = existing.get(email)
+            if row is None:
+                row = ProposalCoSpeaker.objects.create(
+                    proposal=proposal,
+                    email=email,
+                    display_name=name,
+                    user=account,
+                    linked_at=timezone.now() if account else None,
+                )
+                invited.append(row)
+            else:
+                changed = []
+                if row.display_name != name:
+                    row.display_name = name
+                    changed.append("display_name")
+                if account and not row.user_id:
+                    row.user = account
+                    row.linked_at = timezone.now()
+                    changed += ["user", "linked_at"]
+                if changed:
+                    row.save(update_fields=changed)
+
+        for row in invited:
+            CFPService.send_co_speaker_invite(row, request=request)
+
+        return proposal.co_speakers.all()
+
+    @staticmethod
+    def send_co_speaker_invite(co_speaker, request=None):
+        """Tell someone they have been added to a proposal."""
+        from emails.services import send_email, site_url
+
+        base = f"{request.scheme}://{request.get_host()}" if request else site_url()
+        proposal = co_speaker.proposal
+        send_email(
+            template="cfp/co_speaker_invite",
+            to=[co_speaker.email],
+            subject=f"You have been added to a PyCon Nigeria proposal: {proposal.title}",
+            context={
+                "co_speaker_name": co_speaker.display_name,
+                "lead_speaker_name": proposal.speaker.full_name,
+                "proposal_title": proposal.title,
+                "conference_year": proposal.conference_year,
+                "needs_account": co_speaker.user_id is None,
+                "signup_url": f"{base}/accounts/signup/",
+                "proposal_url": f"{base}/cfp/proposal/{proposal.id}/",
+            },
+            tags=["cfp", "co_speaker_invite"],
+            conference_year=proposal.conference_year,
+            fail_silently=True,
+        )
+
+    @staticmethod
     def get_speaker_for_user(user, conference_year=None):
         """This user's speaker profile for an edition, or None."""
         if not user or not user.is_authenticated:
@@ -189,6 +343,7 @@ class CFPService:
         """Speaker confirms their accepted talk."""
         if proposal.status != Proposal.STATUS_ACCEPTED:
             return proposal
+        proposal.confirmed_at = timezone.now()
         old_status = proposal.status
         proposal.status = Proposal.STATUS_CONFIRMED
         proposal.save()

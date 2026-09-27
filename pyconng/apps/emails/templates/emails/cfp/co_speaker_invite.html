@@ -1,0 +1,33 @@
+{% extends "emails/_base.html" %}
+{% block title %}You have been added to a proposal{% endblock %}
+{% block content %}
+  <p>Hi {{ co_speaker_name }},</p>
+  <p>
+    {{ lead_speaker_name }} has added you as a co-speaker on a proposal for
+    PyCon Nigeria {{ conference_year }}: <strong>{{ proposal_title }}</strong>.
+  </p>
+  {% if needs_account %}
+  <p>
+    You do not have an account with us yet. Create one with this email address and the
+    proposal will appear in your dashboard automatically — you will then be able to see
+    its status and fill in your own speaker details if it is accepted.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ signup_url }}"
+       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
+      Create my account
+    </a>
+  </p>
+  {% else %}
+  <p style="margin:24px 0;">
+    <a href="{{ proposal_url }}"
+       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
+      View the proposal
+    </a>
+  </p>
+  {% endif %}
+  <p style="font-size:14px;color:#6b7280;">
+    If you were added by mistake, reply to this email and we will take your name off it.
+  </p>
+  <p>Best regards,<br>PyCon Nigeria Team</p>
+{% endblock %}

@@ -32,7 +32,7 @@
             </div>
             {% endif %}
 
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
 
                 <!-- Speaker Info -->
@@ -89,6 +89,35 @@
                             <label for="id_first_time_speaker" class="text-sm text-gray-700">First-time speaker?</label>
                         </div>
                     </div>
+                        {# Co-speakers #}
+                        <div>
+                            <label for="{{ co_form.co_speakers.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                {{ co_form.co_speakers.label }}
+                            </label>
+                            {{ co_form.co_speakers }}
+                            {% if co_form.co_speakers.errors %}
+                            {% for err in co_form.co_speakers.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ err }}</p>
+                            {% endfor %}
+                            {% endif %}
+                            <p class="mt-1 text-xs text-gray-400">{{ co_form.co_speakers.help_text }}</p>
+                        </div>
+
+                        {# Headshot #}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="{{ speaker_form.photo.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Headshot</label>
+                                {{ speaker_form.photo }}
+                                {% if speaker_form.photo.errors %}<p class="mt-1 text-sm text-red-600">{{ speaker_form.photo.errors.0 }}</p>{% endif %}
+                                <p class="mt-1 text-xs text-gray-400">{{ speaker_form.photo.help_text }}</p>
+                            </div>
+                            <div>
+                                <label for="{{ speaker_form.photo_alt.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Photo description</label>
+                                {{ speaker_form.photo_alt }}
+                                <p class="mt-1 text-xs text-gray-400">{{ speaker_form.photo_alt.help_text }}</p>
+                            </div>
+                        </div>
+
                 </div>
 
                 <!-- Proposal Info -->
