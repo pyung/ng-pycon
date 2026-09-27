@@ -44,6 +44,21 @@
                 {{ page.hero_event_summary|richtext }}
             </div>
             {% endif %}
+            {% if page.prospectus %}
+            <div class="mt-8">
+                <a href="{{ page.prospectus.url }}" download
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-white text-teal-800 font-semibold rounded-lg shadow hover:bg-teal-50 transition-colors">
+                    <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M10 2a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L9 11.586V3a1 1 0 0 1 1-1Z"/>
+                        <path d="M3 15a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z"/>
+                    </svg>
+                    {{ page.prospectus_label|default:"Download the prospectus" }}
+                </a>
+                <p class="mt-2 text-sm {% if page.hero_overlay_style == 'light' %}text-gray-600{% else %}text-white/75{% endif %}">
+                    {% if page.prospectus_note %}{{ page.prospectus_note }}{% else %}{{ page.prospectus.file_extension|upper }}{% if page.prospectus.file_size %} · {{ page.prospectus.file_size|filesizeformat }}{% endif %}{% endif %}
+                </p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -131,6 +146,45 @@
     </div>
 </section>
 
+{# Current sponsors #}
+{% if sponsors_by_tier %}
+<section id="current-sponsors" class="theme-section bg-gray-50">
+    <div class="theme-container">
+        <div class="max-w-3xl mx-auto text-center mb-10">
+            <h2 class="theme-heading text-3xl md:text-4xl font-bold mb-3">{{ page.current_sponsors_title }}</h2>
+            {% if page.current_sponsors_intro %}
+            <div class="prose max-w-none mx-auto text-gray-600">{{ page.current_sponsors_intro|richtext }}</div>
+            {% endif %}
+        </div>
+        {% for tier, sponsors in sponsors_by_tier %}
+        <div class="mb-10">
+            <h3 class="text-center text-sm font-semibold uppercase tracking-wide text-gray-500 mb-1">{{ tier.name }}</h3>
+            {% if tier.description %}
+            <p class="text-center text-sm text-gray-400 mb-5">{{ tier.description }}</p>
+            {% endif %}
+            <div class="flex flex-wrap justify-center items-center gap-6 max-w-4xl mx-auto">
+                {% for sponsor in sponsors %}
+                <div class="flex items-center justify-center p-4 bg-white rounded-lg border border-gray-200 hover:border-teal-400 transition-colors">
+                    {% if sponsor.url %}
+                    <a href="{{ sponsor.url }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center">
+                    {% endif %}
+                        {% if sponsor.logo %}
+                        {% image sponsor.logo max-240x120 class="max-h-16 w-auto object-contain" alt=sponsor.alt_text %}
+                        {% else %}
+                        <span class="text-gray-700 font-medium">{{ sponsor.name }}</span>
+                        {% endif %}
+                    {% if sponsor.url %}
+                    </a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 {# CTA + trust #}
 <section class="theme-section bg-teal-700 text-white">
     <div class="theme-container">
@@ -153,6 +207,12 @@
                 <a href="{{ page.cta_secondary_url }}"
                    class="inline-flex items-center px-6 py-3 border-2 border-white/80 text-white font-semibold rounded-lg hover:bg-white/10 transition-colors">
                     {{ page.cta_secondary_label }}
+                </a>
+                {% endif %}
+                {% if page.prospectus %}
+                <a href="{{ page.prospectus.url }}" download
+                   class="inline-flex items-center px-6 py-3 border-2 border-white/80 text-white font-semibold rounded-lg hover:bg-white/10 transition-colors">
+                    {{ page.prospectus_label|default:"Download the prospectus" }}
                 </a>
                 {% endif %}
             </div>

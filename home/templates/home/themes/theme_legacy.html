@@ -108,24 +108,26 @@ conferences from several years ago.
     {% endif %}
     
     <!-- Sponsors (if any) -->
-    {% if page.sponsors %}
+    {% if sponsors_by_tier %}
     <div class="section">
         {% if page.sponsor_section_title %}
         <h2>{{ page.sponsor_section_title }}</h2>
         {% endif %}
         <div style="text-align: center;">
-            {% for block in page.sponsors %}
+            {% for tier, sponsors in sponsors_by_tier %}
+            {% for sponsor in sponsors %}
             <div style="display: inline-block; margin: 1rem; padding: 1rem;">
-                {% if block.value.logo %}
-                <img src="{{ block.value.logo.file.url }}" 
-                     alt="{{ block.value.name }}"
+                {% if sponsor.logo %}
+                <img src="{{ sponsor.logo.file.url }}"
+                     alt="{{ sponsor.alt_text }}"
                      style="max-width: 200px; max-height: 100px;">
                 {% endif %}
                 <p style="margin-top: 0.5rem;">
-                    <strong>{{ block.value.name }}</strong><br>
-                    <small style="color: #7f8c8d;">{{ block.value.get_tier_display }}</small>
+                    <strong>{{ sponsor.name }}</strong><br>
+                    <small style="color: #7f8c8d;">{{ tier.name }}</small>
                 </p>
             </div>
+            {% endfor %}
             {% endfor %}
         </div>
     </div>

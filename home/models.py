@@ -104,28 +104,6 @@ class NavigationMenuItemBlock(blocks.StructBlock):
         label = "Menu Item"
 
 
-class SponsorBlock(blocks.StructBlock):
-    """A sponsor entry."""
-    name = blocks.CharBlock(max_length=200, required=True)
-    logo = ImageChooserBlock(required=True)
-    tier = blocks.ChoiceBlock(
-        choices=[
-            ('gold', 'Gold'),
-            ('silver', 'Silver'),
-            ('bronze', 'Bronze'),
-            ('patron', 'Patron'),
-            ('startup', 'Startup'),
-            ('media', 'Media Partner'),
-        ],
-        required=True
-    )
-    website_url = blocks.URLBlock(required=False)
-    
-    class Meta:
-        icon = "image"
-        label = "Sponsor"
-
-
 class FooterLinkBlock(blocks.StructBlock):
     """A footer link."""
     label = blocks.CharBlock(max_length=100, required=True)
@@ -287,9 +265,6 @@ class HomePage(Page):
         blank=True,
         help_text="Sponsor section title"
     )
-    sponsors = StreamField([
-        ('sponsor', SponsorBlock()),
-    ], blank=True, help_text="Add sponsors")
     
     # Community Voting Section
     voting_section_title = models.CharField(
@@ -426,32 +401,16 @@ class HomePage(Page):
     
     def get_sponsors_by_tier(self):
         """
-        Return sponsors grouped by tier. Unlike Django's regroup (which only groups
-        consecutive items), this properly groups all sponsors of the same tier together.
+        This edition's published sponsors, grouped by tier in configured order.
+
+        Reads Sponsor records rather than page blocks, so the homepage and the
+        sponsorship page show the same list and there is one place to update it.
+        Returns ``[(tier, [sponsor, ...]), ...]``.
         """
-        if not self.sponsors:
-            return []
-        
-        tier_order = ['gold', 'silver', 'bronze', 'patron', 'startup', 'media']
-        tier_names = {
-            'gold': 'Gold', 'silver': 'Silver', 'bronze': 'Bronze',
-            'patron': 'Patron', 'startup': 'Startup', 'media': 'Media Partner'
-        }
-        
-        by_tier = {}
-        for block in self.sponsors:
-            if block.block_type == 'sponsor':
-                tier = block.value.get('tier', '').lower()
-                by_tier.setdefault(tier, []).append(block)
-        
-        result = []
-        for tier in tier_order:
-            if tier in by_tier:
-                result.append((tier_names.get(tier, tier.title()), by_tier[tier]))
-        for tier, sponsors in by_tier.items():
-            if tier not in tier_order:
-                result.append((tier_names.get(tier, tier.title()), sponsors))
-        return result
+        from editions.current import current_year
+        from sponsors.models import sponsors_by_tier
+
+        return sponsors_by_tier(self.conference_year or current_year())
 
     def get_ticket_types(self):
         """Fetch ticket types from the tickets app for this page's conference year."""
@@ -528,7 +487,6 @@ class HomePage(Page):
         
         MultiFieldPanel([
             FieldPanel('sponsor_section_title'),
-            FieldPanel('sponsors'),
         ], heading="Sponsors"),
         
         MultiFieldPanel([
@@ -751,6 +709,42 @@ class SponsorPage(Page):
         help_text="Organizer credibility, nonprofit / community messaging",
     )
 
+    # Prospectus
+    prospectus = models.ForeignKey(
+        "wagtaildocs.Document",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text=(
+            "The sponsorship prospectus, usually a PDF. Upload it under Documents "
+            "and choose it here; replacing the file needs no deploy."
+        ),
+    )
+    prospectus_label = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Download the prospectus",
+        help_text="Text on the download button.",
+    )
+    prospectus_note = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Optional line under the button, e.g. "PDF, 2.4 MB".',
+    )
+
+    # Current sponsors
+    show_current_sponsors = models.BooleanField(
+        default=True,
+        help_text="Show this edition's published sponsors, grouped by tier.",
+    )
+    current_sponsors_title = models.CharField(
+        max_length=200,
+        default="Our sponsors",
+        help_text="Heading above the sponsor logos.",
+    )
+    current_sponsors_intro = RichTextField(blank=True)
+
     parent_page_types = ["home.HomePage"]
     subpage_types = []
 
@@ -805,6 +799,22 @@ class SponsorPage(Page):
             ],
             heading="Call to action & trust",
         ),
+        MultiFieldPanel(
+            [
+                FieldPanel("prospectus"),
+                FieldPanel("prospectus_label"),
+                FieldPanel("prospectus_note"),
+            ],
+            heading="Prospectus",
+        ),
+        MultiFieldPanel(
+            [
+                FieldPanel("show_current_sponsors"),
+                FieldPanel("current_sponsors_title"),
+                FieldPanel("current_sponsors_intro"),
+            ],
+            heading="Current sponsors",
+        ),
     ]
 
     def get_parent_homepage(self):
@@ -825,6 +835,16 @@ class SponsorPage(Page):
         else:
             context["page_theme"] = "default"
             context["page_conference_year"] = None
+
+        from editions.current import current_year
+        from sponsors.models import sponsors_by_tier
+
+        # This page's edition, falling back to the current one.
+        year = (parent_homepage.conference_year if parent_homepage else None) or current_year()
+        context["sponsor_year"] = year
+        context["sponsors_by_tier"] = (
+            sponsors_by_tier(year) if self.show_current_sponsors else []
+        )
         return context
 
     class Meta:

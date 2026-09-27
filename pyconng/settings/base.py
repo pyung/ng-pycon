@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "editions",
     "audit",
     "meetups",
+    "sponsors",
     "accounts",
     "tickets",
     "cfp",

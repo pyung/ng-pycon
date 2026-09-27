@@ -325,7 +325,7 @@
 </section>
 {% endif %}
 
-{% if page.sponsors %}
+{% if sponsors_by_tier %}
 <section class="theme-section">
     <div class="theme-container text-center">
         {% if page.sponsor_section_title %}
@@ -333,21 +333,21 @@
         {% endif %}
         
         {% if sponsors_by_tier %}
-        {% for tier_name, sponsors in sponsors_by_tier %}
+        {% for tier, sponsors in sponsors_by_tier %}
         <div class="mb-12">
-            <h3 class="text-2xl font-semibold text-theme-primary mb-6 text-center">{{ tier_name }}</h3>
+            <h3 class="text-2xl font-semibold text-theme-primary mb-6 text-center">{{ tier.name }}</h3>
             <div class="flex flex-wrap justify-center items-center gap-6 max-w-4xl mx-auto">
                 {% for sponsor in sponsors %}
                 <div class="flex items-center justify-center p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow w-full">
-                    {% if sponsor.value.website_url %}
-                    <a href="{{ sponsor.value.website_url }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-full">
+                    {% if sponsor.url %}
+                    <a href="{{ sponsor.url }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-full">
                     {% endif %}
-                        {% if sponsor.value.logo %}
-                        {% image sponsor.value.logo max-200x100 class="max-h-16 max-w-full object-contain" alt=sponsor.value.name %}
+                        {% if sponsor.logo %}
+                        {% image sponsor.logo max-200x100 class="max-h-16 max-w-full object-contain" alt=sponsor.alt_text %}
                         {% else %}
-                        <span class="text-gray-600">{{ sponsor.value.name }}</span>
+                        <span class="text-gray-600">{{ sponsor.name }}</span>
                         {% endif %}
-                    {% if sponsor.value.website_url %}
+                    {% if sponsor.url %}
                     </a>
                     {% endif %}
                 </div>
