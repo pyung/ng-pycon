@@ -11,9 +11,9 @@
             <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
                 {{ page.hero_title }} {{ conference_year }}
             </h1>
-            {% if page.conference_location or page.conference_dates %}
+            {% if display_venue or display_dates %}
             <div class="text-white text-xl md:text-2xl mb-6 font-medium">
-                {% if page.conference_location %}{{ page.conference_location }}{% endif %}{% if page.conference_location and page.conference_dates %}<br>{% endif %}{% if page.conference_dates %}{{ page.conference_dates }}{% endif %}
+                {% if display_venue %}{{ display_venue }}{% endif %}{% if display_venue and display_dates %}<br>{% endif %}{% if display_dates %}{{ display_dates }}{% endif %}
             </div>
             {% endif %}
             
@@ -47,10 +47,12 @@
             </div>
             {% endif %}
             
+            {% include "home/includes/_countdown.html" %}
+
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                {% if page.hero_primary_button_text %}
-                <a href="{{ page.hero_primary_button_url|default:'#' }}" class="bg-white text-theme-primary px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
-                    {{ page.hero_primary_button_text }}
+                {% if primary_cta.label %}
+                <a href="{{ primary_cta.url }}" class="bg-white text-theme-primary px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+                    {{ primary_cta.label }}
                 </a>
                 {% endif %}
                 {% if page.hero_secondary_button_text %}

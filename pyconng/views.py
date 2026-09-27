@@ -39,16 +39,26 @@ def year_page_serve(request, year, path=''):
     
     Priority order:
     1. If current year, redirect to root (current year should not be accessed via /year)
-    2. Check for HomePage with slug matching the year OR conference_year field matching
-    3. Check for static archive files
-    4. Raise 404 (no fallback to current homepage for archived years)
+    2. Serve a YearArchivePage for that year if one is published
+    3. Otherwise a HomePage with slug matching the year OR conference_year matching
+    4. Check for static archive files
+    5. Raise 404 (no fallback to current homepage for archived years)
     """
     # 1) Prevent accessing current year via /year URL - redirect to root
     if year == current_year():
         redirect_path = f"/{path}" if path else "/"
         return redirect(redirect_path, permanent=False)
     
-    # 2) Try to find a HomePage for this year
+    # 2a) A YearArchivePage is purpose-built for a past edition, so it wins.
+    from program.models import YearArchivePage
+
+    archive_page = (
+        YearArchivePage.objects.live().filter(conference_year=year).first()
+    )
+    if archive_page and not path:
+        return archive_page.specific.serve(request)
+
+    # 2b) Otherwise look for a HomePage for this year
     try:
         site = Site.find_for_request(request)
         if not site:
@@ -102,5 +112,8 @@ def year_page_serve(request, year, path=''):
         return archive_response
     
     # 4) No archive found - raise 404
-    raise Http404(f"No archive found for year {year}. Please create a HomePage in Wagtail admin with slug '{year}' or conference_year={year}.") 
+    raise Http404(
+        f"No archive found for {year}. Create a Year Archive Page with "
+        f"conference_year={year}, or a HomePage with slug '{year}'."
+    )
     

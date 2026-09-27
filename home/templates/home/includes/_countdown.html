@@ -1,0 +1,71 @@
+{% comment %}
+  Countdown to the first day of the conference.
+
+  Renders nothing unless `countdown_target` is set — the HomePage property
+  returns None when there is no start date on the Edition, or when the
+  conference has already begun, so there is never a countdown to the past.
+
+  Server-rendered days are shown immediately so the figure is correct before
+  any JavaScript runs, and for anyone who has it disabled.
+{% endcomment %}
+{% if countdown_target %}
+<div class="pycon-countdown" data-target="{{ countdown_target|date:'Y-m-d' }}"
+     role="group" aria-label="Time until the conference">
+    <div class="pycon-countdown__units">
+        <div class="pycon-countdown__unit">
+            <b data-cd="days">{{ countdown_days }}</b><span>days</span>
+        </div>
+        <div class="pycon-countdown__unit" data-cd-hide>
+            <b data-cd="hours">—</b><span>hours</span>
+        </div>
+        <div class="pycon-countdown__unit" data-cd-hide>
+            <b data-cd="minutes">—</b><span>minutes</span>
+        </div>
+    </div>
+    {% if page.countdown_label %}
+    <p class="pycon-countdown__label">{{ page.countdown_label }}</p>
+    {% endif %}
+</div>
+
+<style>
+  .pycon-countdown__units{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center}
+  .pycon-countdown__unit{text-align:center;min-width:4.5rem}
+  .pycon-countdown__unit b{display:block;font-size:2.25rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .pycon-countdown__unit span{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-top:.35rem}
+  .pycon-countdown__label{text-align:center;font-size:.9375rem;opacity:.85;margin:.75rem 0 0}
+</style>
+
+<script>
+(function () {
+  var root = document.querySelector('.pycon-countdown');
+  if (!root) return;
+  var target = new Date(root.dataset.target + 'T00:00:00');
+  if (isNaN(target)) return;
+
+  // The hours and minutes units start hidden: without JS a static "—" is worse
+  // than showing only the day count the server already rendered correctly.
+  root.querySelectorAll('[data-cd-hide]').forEach(function (el) { el.hidden = false; });
+
+  function out(name, value) {
+    var el = root.querySelector('[data-cd="' + name + '"]');
+    if (el) el.textContent = value;
+  }
+
+  function tick() {
+    var ms = target - new Date();
+    if (ms <= 0) {
+      root.querySelectorAll('[data-cd-hide]').forEach(function (el) { el.hidden = true; });
+      out('days', 0);
+      return;
+    }
+    var mins = Math.floor(ms / 60000);
+    out('days', Math.floor(mins / 1440));
+    out('hours', Math.floor(mins % 1440 / 60));
+    out('minutes', mins % 60);
+  }
+
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
+{% endif %}

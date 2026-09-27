@@ -114,6 +114,30 @@ class FooterLinkBlock(blocks.StructBlock):
         label = "Footer Link"
 
 
+class PhaseCTABlock(blocks.StructBlock):
+    """Override the homepage's primary button for one lifecycle phase."""
+
+    phase = blocks.ChoiceBlock(
+        choices=[],  # filled in __init__ so the phase list stays in one place
+        help_text="Which phase this wording applies to.",
+    )
+    label = blocks.CharBlock(max_length=80)
+    url = blocks.CharBlock(
+        max_length=500,
+        help_text="Path or full URL. Relative paths like /tickets/ are fine.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from editions.phases import PHASE_CHOICES
+
+        self.child_blocks["phase"].field.choices = PHASE_CHOICES
+
+    class Meta:
+        icon = "link"
+        label = "Phase call to action"
+
+
 class SponsorBenefitBlock(blocks.StructBlock):
     """A single 'why sponsor' benefit (title + body)."""
     title = blocks.CharBlock(max_length=200)
@@ -196,14 +220,19 @@ class HomePage(Page):
     )
     hero_primary_button_text = models.CharField(
         max_length=50,
+        blank=True,
         default="Register Now",
-        help_text="Primary call-to-action button text"
+        help_text=(
+            "Overrides the automatic button. Clear this (and the URL) to let the "
+            "button follow the conference phase instead."
+        ),
     )
     hero_primary_button_url = models.URLField(blank=True)
     hero_secondary_button_text = models.CharField(
         max_length=50,
+        blank=True,
         default="Call for Papers",
-        help_text="Secondary button text"
+        help_text="Secondary button text. Leave blank to hide the button.",
     )
     hero_secondary_button_url = models.URLField(blank=True)
     
@@ -212,6 +241,26 @@ class HomePage(Page):
         max_length=200,
         blank=True,
         help_text="Conference location (e.g., Lagos, Nigeria)"
+    )
+    show_countdown = models.BooleanField(
+        default=True,
+        help_text="Show a countdown to the first day. Needs a start date on the Edition.",
+    )
+    countdown_label = models.CharField(
+        max_length=120,
+        blank=True,
+        default="until the conference",
+        help_text="Text under the countdown.",
+    )
+    phase_ctas = StreamField(
+        [("cta", PhaseCTABlock())],
+        blank=True,
+        use_json_field=True,
+        help_text=(
+            "Optional: reword the primary button for particular phases. Without "
+            "an entry, sensible defaults are used. The hero button fields above "
+            "override this entirely if you fill them in."
+        ),
     )
     conference_dates = models.CharField(
         max_length=200,
@@ -343,7 +392,8 @@ class HomePage(Page):
         "home.SponsorPage",
         "home.HomePage",
         "meetups.MeetupIndexPage",
-    ]  # Standard pages, sponsor page, meetups index, and nested year homepages
+        "program.YearArchivePage",
+    ]  # Standard pages, sponsor page, meetups index, year archives, nested year homepages
 
     def get_default_child_class(self):
         from .models import StandardPage
@@ -399,6 +449,103 @@ class HomePage(Page):
                 self.title = f"PyCon Nigeria {self.conference_year}"
         return super().save(*args, **kwargs)
     
+    @property
+    def edition(self):
+        """This page's Edition, falling back to the current one."""
+        from editions.current import current_year, edition_for_year
+
+        return edition_for_year(self.conference_year or current_year())
+
+    @property
+    def display_dates(self):
+        """
+        The dates to show. The page's own text wins, so an organizer can write
+        something the date fields cannot express, otherwise the Edition's dates.
+        """
+        if self.conference_dates:
+            return self.conference_dates
+        edition = self.edition
+        return edition.dates_display if edition else ""
+
+    @property
+    def display_venue(self):
+        """The venue to show: this page's text, else the Edition's."""
+        if self.conference_location:
+            return self.conference_location
+        edition = self.edition
+        return edition.venue if edition else ""
+
+    @property
+    def countdown_target(self):
+        """
+        The datetime the countdown runs to, or None when there is nothing to
+        count down to — no start date, or the conference has already begun.
+        """
+        from django.utils import timezone
+
+        if not self.show_countdown:
+            return None
+        edition = self.edition
+        if not edition or not edition.starts_on:
+            return None
+        if edition.starts_on <= timezone.localdate():
+            return None
+        return edition.starts_on
+
+    @property
+    def countdown_days(self):
+        """
+        Whole days until the first day, so the figure is correct before any
+        JavaScript runs and for anyone who has it turned off.
+        """
+        from django.utils import timezone
+
+        target = self.countdown_target
+        if not target:
+            return None
+        return max((target - timezone.localdate()).days, 0)
+
+    @property
+    def conference_phase(self):
+        from editions.current import current_year
+        from editions.phases import phase_for
+
+        return phase_for(self.conference_year or current_year())
+
+    def get_primary_cta(self):
+        """
+        The hero's primary button as ``{"label", "url", "phase"}``.
+
+        Resolution order, most explicit first: the manual hero fields, then a
+        per-phase override, then the computed default for the phase. That way
+        nothing changes for a page that already had its buttons filled in.
+        """
+        from editions.current import current_year
+        from editions.phases import default_cta
+
+        year = self.conference_year or current_year()
+        phase, label, url = default_cta(year)
+
+        if self.hero_primary_button_text and self.hero_primary_button_url:
+            return {
+                "label": self.hero_primary_button_text,
+                "url": self.hero_primary_button_url,
+                "phase": phase,
+                "source": "manual",
+            }
+
+        for block in self.phase_ctas:
+            value = block.value
+            if value.get("phase") == phase:
+                return {
+                    "label": value.get("label") or label,
+                    "url": value.get("url") or url,
+                    "phase": phase,
+                    "source": "override",
+                }
+
+        return {"label": label, "url": url, "phase": phase, "source": "default"}
+
     def get_sponsors_by_tier(self):
         """
         This edition's published sponsors, grouped by tier in configured order.
@@ -458,6 +605,12 @@ class HomePage(Page):
         context['page_conference_year'] = self.conference_year
         context['sponsors_by_tier'] = self.get_sponsors_by_tier()
         context['ticket_types'] = self.get_ticket_types()
+        context['display_dates'] = self.display_dates
+        context['display_venue'] = self.display_venue
+        context['countdown_target'] = self.countdown_target
+        context['countdown_days'] = self.countdown_days
+        context['conference_phase'] = self.conference_phase
+        context['primary_cta'] = self.get_primary_cta()
         return context
 
     content_panels = Page.content_panels + [
@@ -476,6 +629,9 @@ class HomePage(Page):
             FieldPanel('hero_primary_button_url'),
             FieldPanel('hero_secondary_button_text'),
             FieldPanel('hero_secondary_button_url'),
+            FieldPanel('show_countdown'),
+            FieldPanel('countdown_label'),
+            FieldPanel('phase_ctas'),
         ], heading="Hero Section"),
         
         MultiFieldPanel([

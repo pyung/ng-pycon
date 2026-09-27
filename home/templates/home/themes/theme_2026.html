@@ -29,27 +29,28 @@ undraw SVG illustrations.  All 12 editable sections rendered.
             {% endif %}
 
             {# Location & Dates #}
-            {% if page.conference_dates or page.conference_location %}
+            {% if display_dates or display_venue %}
             <div class="flex flex-wrap justify-center gap-6 text-lg mb-8 opacity-85 animate-in" style="animation-delay:.15s">
-                {% if page.conference_dates %}
+                {% if display_dates %}
                 <span class="inline-flex items-center gap-2">
                     <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    {{ page.conference_dates }}
+                    {{ display_dates }}
                 </span>
                 {% endif %}
-                {% if page.conference_location %}
+                {% if display_venue %}
                 <span class="inline-flex items-center gap-2">
                     <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    {{ page.conference_location }}
+                    {{ display_venue }}
                 </span>
                 {% endif %}
             </div>
             {% endif %}
 
-            {# Countdown timer (reuses voting_deadline for the conference countdown) #}
-            {% if page.voting_deadline %}
+            {# Countdown to the first day, from the Edition's start date #}
+            {% if countdown_target %}
             <div class="mb-10 animate-in" style="animation-delay:.25s"
-                 x-data="countdown('{{ page.voting_deadline|date:"c" }}')">
+                 x-data="countdown('{{ countdown_target|date:"c" }}')"
+                 role="group" aria-label="Time until the conference">
                 <div class="flex justify-center gap-4 md:gap-6">
                     <div class="countdown-box">
                         <div class="countdown-value" x-text="String(days).padStart(2,'0')"></div>
@@ -68,14 +69,17 @@ undraw SVG illustrations.  All 12 editable sections rendered.
                         <div class="countdown-label">Seconds</div>
                     </div>
                 </div>
+                {% if page.countdown_label %}
+                <p class="text-center text-sm mt-3 opacity-80">{{ page.countdown_label }}</p>
+                {% endif %}
             </div>
             {% endif %}
 
             {# CTA Buttons #}
             <div class="flex flex-wrap gap-4 justify-center animate-in" style="animation-delay:.3s">
-                {% if page.hero_primary_button_url %}
-                <a href="{{ page.hero_primary_button_url }}" class="btn-gold">
-                    {{ page.hero_primary_button_text|default:"Register Now" }}
+                {% if primary_cta.label %}
+                <a href="{{ primary_cta.url }}" class="btn-gold">
+                    {{ primary_cta.label }}
                 </a>
                 {% endif %}
                 {% if page.hero_secondary_button_url %}
