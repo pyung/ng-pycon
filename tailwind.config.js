@@ -5,7 +5,10 @@ module.exports = {
     './pyconng/apps/**/templates/**/*.html',
     './home/templates/**/*.html',
     './search/templates/**/*.html',
-    './pyconng/static/js/**/*.js',
+    './pyconng/static/js/*.js',
+    './pyconng/static/js/themes/*.js',
+    // Not js/vendor: scanning a minified library for class-like strings
+    // generates utilities nothing uses and inflates every theme's CSS.
     './pyconng/static/css/src/**/*.css',
   ],
   theme: {

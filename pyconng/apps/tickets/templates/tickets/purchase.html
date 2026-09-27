@@ -1,7 +1,7 @@
 {% extends base_template %}
-{% load static %}
+{% load static conduct_tags %}
 
-{% block title %}Purchase Tickets - PyCon Nigeria {{ conference_year }}{% endblock %}
+{% block title %}Purchase Tickets{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -171,11 +171,23 @@
                         <input type="checkbox" x-model="cocAccepted"
                                @change="calculateTotal()"
                                class="w-5 h-5 mt-0.5 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+                        {% comment %}Both of these used to point at the empty
+                        fragment -- two links to nothing, on the page where somebody
+                        hands over money to agree to them. The Code of Conduct
+                        resolves to its real page now. The terms are named in plain
+                        text until a terms page exists, because a link that goes
+                        nowhere is worse than no link.{% endcomment %}
                         <span class="text-sm text-gray-700">
-                            I have read and agree to the 
-                            <a href="#" class="text-teal-600 underline hover:text-teal-700">Code of Conduct</a>
+                            I have read and agree to the
+                            <a href="{% code_of_conduct_url %}" class="text-teal-600 underline hover:text-teal-700">Code of Conduct</a>
+                            {% with terms=terms_url %}
                             and
-                            <a href="#" class="text-teal-600 underline hover:text-teal-700">Terms & Conditions</a>.
+                            {% if terms %}
+                            <a href="{{ terms }}" class="text-teal-600 underline hover:text-teal-700">Terms &amp; Conditions</a>.
+                            {% else %}
+                            Terms &amp; Conditions.
+                            {% endif %}
+                            {% endwith %}
                         </span>
                     </label>
                 </div>

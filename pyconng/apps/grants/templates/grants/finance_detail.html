@@ -1,7 +1,7 @@
 {% extends base_template %}
 {% load static %}
 
-{% block title %}Payment - {{ application.user.get_full_name|default:application.user.email }} - PyCon Nigeria {{ conference_year }}{% endblock %}
+{% block title %}Payment - {{ application.user.get_full_name|default:application.user.email }}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

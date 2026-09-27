@@ -122,6 +122,28 @@ This runs:
 | `python manage.py runserver` | Start Django only (use after `npm run build-css`) |
 | `npm run build-css` | Build CSS once (for production) |
 | `npm run build-css-watch` | Watch and rebuild CSS only |
+| `npm run build` | Build CSS and vendor Alpine (what the Docker image runs) |
+
+---
+
+## Accessibility and performance
+
+Both are checked, not assumed. `manage.py test` includes the audit over rendered
+pages, so CI fails if a page loses its skip link, its `<main>` landmark, its title
+or its image alt text. Run it against real content with:
+
+| Command | Description |
+|---------|-------------|
+| `python manage.py audit_frontend` | Audit every live page and app view; errors only |
+| `python manage.py audit_frontend --warnings` | Include warnings (image sizing, heading order, third-party assets) |
+| `python manage.py audit_frontend --palette` | Colour contrast across the theme palettes |
+| `python manage.py audit_frontend --strict` | Exit non-zero on any error |
+| `python manage.py rewrite_dev_urls` | Find `http://127.0.0.1:8000/...` links saved into page content (`--apply` to fix) |
+
+The audit reads markup, so it catches what markup can show: missing labels, dead
+links, unnamed controls, blocking scripts, development URLs in published content.
+It cannot judge focus order once JavaScript has moved things, or text over a
+photograph. Those still need a person.
 
 ---
 

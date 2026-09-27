@@ -8,7 +8,7 @@
 
     <section class="relative px-4 pt-16 pb-10 overflow-hidden">
         {% if page.hero_image %}
-        {% image page.hero_image fill-1920x500 class="absolute inset-0 w-full h-full object-cover" alt=page.hero_image_alt %}
+        {% image page.hero_image fill-1920x500 format-webp preserve-svg class="absolute inset-0 w-full h-full object-cover" alt=page.hero_image_alt loading="eager" fetchpriority="high" decoding="async" %}
         <div class="absolute inset-0 bg-gray-900/70" aria-hidden="true"></div>
         {% endif %}
         <div class="relative max-w-5xl mx-auto">
@@ -43,7 +43,7 @@
                 {% for block in page.organizers %}
                 <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
                     {% if block.value.photo %}
-                    {% image block.value.photo fill-96x96 class="w-14 h-14 rounded-full object-cover shrink-0" alt=block.value.photo_alt %}
+                    {% image block.value.photo fill-96x96 format-webp preserve-svg class="w-14 h-14 rounded-full object-cover shrink-0" alt=block.value.photo_alt loading="lazy" decoding="async" %}
                     {% endif %}
                     <div class="min-w-0">
                         <p class="font-semibold text-gray-900 truncate">{{ block.value.name }}</p>

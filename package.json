@@ -11,7 +11,8 @@
     "build-css-watch": "concurrently \"tailwindcss -i ./pyconng/static/css/src/input_2024.css -o ./pyconng/static/css/2024.css --watch\" \"tailwindcss -i ./pyconng/static/css/src/input_2025.css -o ./pyconng/static/css/2025.css --watch\" \"tailwindcss -i ./pyconng/static/css/src/input_2026.css -o ./pyconng/static/css/2026.css --watch\"",
     "build-css-prod": "npm run build-css-2024 && npm run build-css-2025 && npm run build-css-2026",
     "dev": "concurrently \"npm run build-css-watch\" \"python manage.py runserver\"",
-    "build": "npm run build-css-prod"
+    "build": "npm run build-css-prod && npm run build-js",
+    "build-js": "mkdir -p pyconng/static/js/vendor && cp node_modules/alpinejs/dist/module.esm.min.js pyconng/static/js/vendor/alpine.esm.js"
   },
   "keywords": [
     "django",

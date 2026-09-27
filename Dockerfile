@@ -72,7 +72,13 @@ COPY --from=frontend-builder --chown=wagtail:wagtail \
     /app/pyconng/static/css/2025.css \
     /app/pyconng/static/css/2026.css \
     ./pyconng/static/css/
-COPY --from=frontend-builder --chown=wagtail:wagtail /app/node_modules/alpinejs/dist/cdn.min.js ./pyconng/static/js/alpine.min.js
+# Alpine, vendored. The base template's import map points at this file, so the
+# site no longer fetches Alpine from jsdelivr on every first visit -- one less
+# third-party round trip on a slow connection, and one less way to go down.
+# The ES module build is the one the import map can resolve; the cdn build that
+# used to be copied to js/alpine.min.js is an IIFE and was never referenced.
+COPY --from=frontend-builder --chown=wagtail:wagtail \
+    /app/pyconng/static/js/vendor/alpine.esm.js ./pyconng/static/js/vendor/alpine.esm.js
 
 # Use user "wagtail" to run the build commands below and the server itself.
 USER wagtail

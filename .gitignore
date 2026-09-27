@@ -56,3 +56,6 @@ yarn-error.log*
 docker/pgbouncer/userlist.txt
 
 pyconng/static/css/*.css
+pyconng/static/css/2024.css
+pyconng/static/css/2025.css
+pyconng/static/css/2026.css

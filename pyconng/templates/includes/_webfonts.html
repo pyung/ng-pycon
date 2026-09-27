@@ -1,0 +1,13 @@
+{% comment %}
+  The edition theme's typefaces.
+
+  `fonts_href` comes from editions.webfonts via the conference context processor,
+  which explains why these are here and not in the theme CSS. Nothing renders
+  when a theme has no entry: the system font stack is a working fallback, and a
+  missing typeface must never stop a new edition opening.
+{% endcomment %}
+{% if fonts_href %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ fonts_href }}">
+{% endif %}

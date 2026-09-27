@@ -12,14 +12,17 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
   openDropdown(i) { this.openDropdownIndex = i },
   closeDropdown() { this.openDropdownIndex = null },
   toggleDropdown(i) { this.openDropdownIndex = this.openDropdownIndex === i ? null : i },
+  closeAll() { this.isOpen = false; this.openDropdownIndex = null },
   toggleMobileItem(i) {
     const idx = this.mobileExpanded.indexOf(i);
     if (idx >= 0) this.mobileExpanded = this.mobileExpanded.filter(x => x !== i);
     else this.mobileExpanded = [...this.mobileExpanded, i];
   }
-}">
+}" @keydown.escape.window="closeAll()">
     <div class="theme-container">
-        <nav class="flex items-center justify-between py-4">
+        {% comment %}A named landmark: there are two navs on the page once the
+        footer renders, and "Main" tells them apart in a screen reader's list.{% endcomment %}
+        <nav class="flex items-center justify-between py-4" aria-label="Main">
             <div class="flex items-center">
                 <a href="{% if is_current_year %}/{% else %}/{{ conference_year }}/{% endif %}" class="text-2xl font-bold text-theme-primary">
                     {{ site_name }}
@@ -40,9 +43,10 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                                         :class="{ 'nav-dropdown-active': openDropdownIndex === {{ forloop.counter0 }} }"
                                         @click.prevent="toggleDropdown({{ forloop.counter0 }})"
                                         :aria-expanded="openDropdownIndex === {{ forloop.counter0 }}"
+                                        aria-controls="nav-dropdown-{{ forloop.counter0 }}"
                                         aria-haspopup="true">
                                         <span>{{ item.value.label }}</span>
-                                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': openDropdownIndex === {{ forloop.counter0 }} }" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': openDropdownIndex === {{ forloop.counter0 }} }" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                         </svg>
                                     </button>
@@ -55,6 +59,7 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                                         x-transition:leave-end="opacity-0 -translate-y-1"
                                         @click.away="closeDropdown()"
                                         class="nav-dropdown-panel absolute left-0 right-auto min-w-[280px] z-[200] pt-2"
+                                        id="nav-dropdown-{{ forloop.counter0 }}"
                                         x-cloak
                                         style="display: none;">
                                         <div class="nav-dropdown-inner">
@@ -67,10 +72,17 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                                     </div>
                                 </div>
                             {% else %}
-                                {% comment %}Simple link{% endcomment %}
-                                <a href="{% if item.value.page %}{% pageurl item.value.page %}{% else %}{{ item.value.link_url|default:'#' }}{% endif %}" class="theme-nav-link">
+                                {% comment %}Simple link. An item with neither a
+                                page nor a URL is not a link -- it used to fall back
+                                to the empty fragment, which announces as a link and
+                                goes nowhere.{% endcomment %}
+                                {% if item.value.page or item.value.link_url %}
+                                <a href="{% if item.value.page %}{% pageurl item.value.page %}{% else %}{{ item.value.link_url }}{% endif %}" class="theme-nav-link">
                                     {{ item.value.label }}
                                 </a>
+                                {% else %}
+                                <span class="theme-nav-link opacity-60">{{ item.value.label }}</span>
+                                {% endif %}
                             {% endif %}
                             {% endwith %}
                         {% endif %}
@@ -99,8 +111,12 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                     {% endif %}
                 {% endif %}
                 
-                <button @click="toggle()" class="md:hidden text-theme-primary focus:outline-none" aria-label="Toggle menu">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button @click="toggle()" type="button"
+                        class="md:hidden text-theme-primary rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--theme-primary)]"
+                        :aria-expanded="isOpen"
+                        aria-controls="mobile-nav"
+                        :aria-label="isOpen ? 'Close menu' : 'Open menu'">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
@@ -108,7 +124,8 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
         </nav>
         
         {% comment %}Mobile navigation{% endcomment %}
-        <div x-show="isOpen" @click.away="close()" x-transition class="md:hidden pb-4">
+        <nav x-show="isOpen" @click.away="close()" x-transition class="md:hidden pb-4"
+             id="mobile-nav" aria-label="Main (mobile)" x-cloak>
             <div class="flex flex-col space-y-1">
                 {% if navigation_menu_items %}
                     {% for item in navigation_menu_items %}
@@ -122,7 +139,7 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                                         class="theme-nav-link block w-full text-left flex items-center justify-between py-3 border-0 bg-transparent cursor-pointer"
                                         :aria-expanded="mobileExpanded.includes({{ forloop.counter0 }})">
                                         <span>{{ item.value.label }}</span>
-                                        <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-180': mobileExpanded.includes({{ forloop.counter0 }}) }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-180': mobileExpanded.includes({{ forloop.counter0 }}) }" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                         </svg>
                                     </button>
@@ -144,9 +161,13 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                                     </div>
                                 </div>
                             {% else %}
-                                <a href="{% if item.value.page %}{% pageurl item.value.page %}{% else %}{{ item.value.link_url|default:'#' }}{% endif %}" class="theme-nav-link block py-3" @click="close()">
+                                {% if item.value.page or item.value.link_url %}
+                                <a href="{% if item.value.page %}{% pageurl item.value.page %}{% else %}{{ item.value.link_url }}{% endif %}" class="theme-nav-link block py-3" @click="close()">
                                     {{ item.value.label }}
                                 </a>
+                                {% else %}
+                                <span class="theme-nav-link block py-3 opacity-60">{{ item.value.label }}</span>
+                                {% endif %}
                             {% endif %}
                             {% endwith %}
                         {% endif %}
@@ -171,6 +192,6 @@ Uses inline x-data to avoid scope/store issues (e.g. when logged in with Wagtail
                 </div>
                 {% endif %}
             </div>
-        </div>
+        </nav>
     </div>
 </header>

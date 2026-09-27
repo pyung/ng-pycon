@@ -8,7 +8,7 @@
 
     <section class="relative px-4 pt-16 pb-10 overflow-hidden">
         {% if page.hero_image %}
-        {% image page.hero_image fill-1920x520 class="absolute inset-0 w-full h-full object-cover" alt=page.hero_image_alt %}
+        {% image page.hero_image fill-1920x520 format-webp preserve-svg class="absolute inset-0 w-full h-full object-cover" alt=page.hero_image_alt loading="eager" fetchpriority="high" decoding="async" %}
         <div class="absolute inset-0 bg-gray-900/70" aria-hidden="true"></div>
         {% endif %}
         <div class="relative max-w-5xl mx-auto">
@@ -100,7 +100,7 @@
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {% for photo in photos %}
                 <figure class="m-0">
-                    {% image photo.image fill-600x400 class="w-full h-auto rounded-lg" alt=photo.alt %}
+                    {% image photo.image fill-600x400 format-webp preserve-svg class="w-full h-auto rounded-lg" alt=photo.alt loading="lazy" decoding="async" %}
                     {% if photo.caption %}
                     <figcaption class="text-xs text-gray-500 mt-1.5">{{ photo.caption }}</figcaption>
                     {% endif %}

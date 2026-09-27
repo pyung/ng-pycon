@@ -57,7 +57,7 @@
                     {{ block.value|richtext }}
                 {% elif block.block_type == "photo" %}
                     <figure class="my-3">
-                        {% image block.value.image width-800 class="rounded-lg w-full h-auto" alt=block.value.alt %}
+                        {% image block.value.image width-800 format-webp preserve-svg class="rounded-lg w-full h-auto" alt=block.value.alt loading="lazy" decoding="async" %}
                         {% if block.value.caption %}
                         <figcaption class="text-xs text-gray-500 mt-1">{{ block.value.caption }}</figcaption>
                         {% endif %}
