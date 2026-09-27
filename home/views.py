@@ -114,6 +114,11 @@ class LoginView(DjangoLoginView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Sign In'
+        # Django's LoginView puts the *host name* in `site_name`, and its view
+        # context beats our site_context processor. The navigation brand and the
+        # page title both read that key, so the sign-in page was headed
+        # "testserver" locally and the bare hostname in production.
+        context['site_name'] = 'PyCon Nigeria'
         # Customize form field labels
         if 'form' in context:
             context['form'].fields['username'].label = 'Email'

@@ -1,0 +1,28 @@
+{% extends base_template %}
+{% load wagtailcore_tags %}
+
+{% block title %}Message sent{% endblock %}
+{% block body_class %}template-contactpage-landing{% if page_theme %} {{ page_theme }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+    <section class="px-4 pt-16 pb-20">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Thank you</h1>
+            {% if page.thank_you_text %}
+            <div class="mt-4 prose max-w-none text-gray-700">{{ page.thank_you_text|richtext }}</div>
+            {% else %}
+            <p class="mt-4 text-gray-600">Your message has reached us.</p>
+            {% endif %}
+            {% if page.response_time %}
+            <p class="mt-2 text-gray-600">{{ page.response_time }}</p>
+            {% endif %}
+            <p class="mt-8">
+                <a href="{% pageurl page %}" class="text-teal-700 font-medium hover:underline">
+                    Back to {{ page.title }}
+                </a>
+            </p>
+        </div>
+    </section>
+</div>
+{% endblock %}

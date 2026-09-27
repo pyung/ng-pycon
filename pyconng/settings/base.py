@@ -53,6 +53,12 @@ INSTALLED_APPS = [
     "grants",
     "dashboard",
     "emails",
+    "conduct",
+    "info",
+    "blog",
+    # Not a feature: the frontend accessibility and performance audit, installed
+    # so `manage.py audit_frontend` and its tests are available. Holds no models.
+    "quality",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.embeds",

@@ -11,10 +11,9 @@ This demonstrates how each archived year can have its own unique design.
 
 {% block body_class %}template-yeararchivepage theme-2024{% endblock %}
 
-{% block extra_js %}
-<!-- 2024 Theme JavaScript -->
-<script src="{% static 'js/themes/theme_2024.js' %}" defer></script>
-{% endblock %}
+{% comment %}No extra_js block: the base template already loads this theme's
+JavaScript from `conference_theme`, so declaring it here fetched and ran the same
+file a second time on every page of the archive.{% endcomment %}
 
 {% block content %}
 <!-- Archive Badge to indicate this is an archived year -->

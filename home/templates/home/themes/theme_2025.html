@@ -9,10 +9,9 @@ You can customize this to match the specific branding/design for 2025.
 
 {% block body_class %}template-yeararchivepage theme-2025{% endblock %}
 
-{% block extra_js %}
-<!-- 2025 Theme JavaScript -->
-<script src="{% static 'js/themes/theme_2025.js' %}" defer></script>
-{% endblock %}
+{% comment %}No extra_js block: the base template already loads this theme's
+JavaScript from `conference_theme`, so declaring it here fetched and ran the same
+file a second time on every page of the archive.{% endcomment %}
 
 {% block content %}
 <!-- Archive Indicator -->

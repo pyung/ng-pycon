@@ -1,0 +1,30 @@
+{% load wagtailcore_tags wagtailimages_tags %}
+<article class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+    {% if post.hero_image %}
+    <a href="{% pageurl post %}" tabindex="-1" aria-hidden="true">
+        {% image post.hero_image fill-800x420 format-webp preserve-svg class="w-full h-auto" alt=post.hero_image_alt loading="lazy" decoding="async" %}
+    </a>
+    {% endif %}
+    <div class="p-5 flex flex-col grow">
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <time datetime="{{ post.published_on|date:'Y-m-d' }}">{{ post.published_on|date:"j F Y" }}</time>
+            {% if post.byline %} &middot; {{ post.byline }}{% endif %}
+        </p>
+        <h3 class="mt-2 text-lg font-bold text-gray-900">
+            <a href="{% pageurl post %}" class="hover:underline">{{ post.title }}</a>
+        </h3>
+        <p class="mt-2 text-sm text-gray-600 grow">{{ post.summary }}</p>
+        {% if post.tags.all %}
+        <ul class="mt-4 flex flex-wrap gap-2 list-none p-0 m-0">
+            {% for tag in post.tags.all %}
+            <li>
+                <a href="{% pageurl index_page %}?tag={{ tag.slug }}"
+                   class="inline-block px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    {{ tag.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</article>

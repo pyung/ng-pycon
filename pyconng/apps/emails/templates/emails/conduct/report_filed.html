@@ -1,0 +1,25 @@
+{% extends "emails/_base.html" %}
+{% block title %}New Code of Conduct report{% endblock %}
+{% block content %}
+  {% comment %}
+    Carries the reference and a one-line summary, never the report itself. An
+    email is copied, forwarded, backed up and read on a phone in public; a report
+    that may name a colleague belongs behind a login.
+  {% endcomment %}
+  <p>A Code of Conduct report has been filed for PyCon Nigeria {{ conference_year }}.</p>
+  <p style="font-size:18px;font-weight:600;margin:24px 0 8px;">{{ reference }}</p>
+  <p style="color:#6b7280;margin:0 0 24px;">{{ summary }}</p>
+  <p>
+    Reporter: <strong>{{ reporter }}</strong>.
+    {% if can_reply %}They left an email address, so they can be answered directly.
+    {% else %}They left no way to reach them, so no reply is possible.{% endif %}
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ admin_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Read the report</a>
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    The details are deliberately not in this email. Please do not forward it, and
+    please do not discuss the report outside the Code of Conduct team.
+  </p>
+  <p>PyCon Nigeria</p>
+{% endblock %}

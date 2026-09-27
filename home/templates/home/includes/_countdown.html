@@ -15,10 +15,13 @@
         <div class="pycon-countdown__unit">
             <b data-cd="days">{{ countdown_days }}</b><span>days</span>
         </div>
-        <div class="pycon-countdown__unit" data-cd-hide>
+        {% comment %}`hidden` matters: the script clears it, so without JavaScript
+        these two read as "— hours — minutes" rather than disappearing. The
+        comment above claimed they started hidden; the attribute was missing.{% endcomment %}
+        <div class="pycon-countdown__unit" data-cd-hide hidden>
             <b data-cd="hours">—</b><span>hours</span>
         </div>
-        <div class="pycon-countdown__unit" data-cd-hide>
+        <div class="pycon-countdown__unit" data-cd-hide hidden>
             <b data-cd="minutes">—</b><span>minutes</span>
         </div>
     </div>

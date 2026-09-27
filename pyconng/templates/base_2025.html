@@ -1,78 +1,8 @@
-{% load static wagtailcore_tags wagtailuserbar %}
+{% extends "base.html" %}
+{% comment %}
+  The 2025 edition's base template.
 
-<!DOCTYPE html>
-<html lang="en" x-data="theme('{{ conference_theme }}')" :data-theme="currentTheme">
-    <head>
-        <meta charset="utf-8" />
-        <title>
-            {% block title %}
-            {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
-            {% endblock %}
-            {% block title_suffix %}
-            {% if site_name %} - {{ site_name }} {{ conference_year }}{% endif %}
-            {% endblock %}
-        </title>
-        {% if page.search_description %}
-        <meta name="description" content="{{ page.search_description }}" />
-        {% endif %}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-        {% if request.in_preview_panel %}
-        <base target="_blank">
-        {% endif %}
-
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-        {% comment %}Load theme-specific CSS only{% endcomment %}
-        <link rel="stylesheet" type="text/css" href="{% static 'css/' %}{{ conference_theme|default:'2025' }}.css">
-
-        {% block extra_css %}{% endblock %}
-
-        <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
-        <meta name="theme-color" content="{{ conference_year_info.colors.0 }}">
-        
-        <meta property="og:type" content="website">
-        <meta property="og:title" content="{% block og_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %} - {{ site_name }} {{ conference_year }}{% endblock %}">
-        <meta property="og:description" content="{% block og_description %}{{ page.search_description|default:'PyCon Nigeria - The premier Python conference in Nigeria' }}{% endblock %}">
-        <meta property="og:image" content="{% block og_image %}{% static 'images/og-image.jpg' %}{% endblock %}">
-        
-        <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:title" content="{% block twitter_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %} - {{ site_name }} {{ conference_year }}{% endblock %}">
-        <meta property="twitter:description" content="{% block twitter_description %}{{ page.search_description|default:'PyCon Nigeria - The premier Python conference in Nigeria' }}{% endblock %}">
-        <meta property="twitter:image" content="{% block twitter_image %}{% static 'images/og-image.jpg' %}{% endblock %}">
-        
-        <meta name="conference-year" content="{{ conference_year }}">
-        <meta name="conference-theme" content="{{ conference_theme }}">
-        <meta name="conference-name" content="{{ conference_year_info.name }}">
-        <meta name="current-year" content="{{ current_year }}">
-    </head>
-
-    <body class="{% block body_class %}{% endblock %}{% if conference_theme %} theme-{{ conference_theme }}{% endif %} font-sans antialiased bg-gray-50 text-gray-900">
-        {% wagtailuserbar %}
-
-        {% block header %}
-        {% include "includes/nav_header.html" %}
-        {% endblock %}
-
-        {% block content %}{% endblock %}
-
-        {% block footer %}{% endblock %}
-
-        <script type="importmap">
-        {
-            "imports": {
-                "alpinejs": "https://cdn.jsdelivr.net/npm/alpinejs@3/dist/module.esm.js"
-            }
-        }
-        </script>
-        <script type="module" src="{% static 'js/pyconng.js' %}"></script>
-        
-        {% comment %}Load theme-specific JS based on conference year{% endcomment %}
-        {% if conference_theme %}
-        <script src="{% static 'js/themes/theme_' %}{{ conference_theme }}.js" defer></script>
-        {% endif %}
-
-        {% block extra_js %}{% endblock %}
-    </body>
-</html>
+  Everything is shared with base.html; this file exists only so the context
+  processor can resolve base_2025.html for /2025/ URLs, and as the place to put
+  anything that turns out to be specific to the 2025 design.
+{% endcomment %}

@@ -46,6 +46,7 @@ class Role(models.TextChoices):
     VOLUNTEER = "volunteer", "Volunteer"
     SPONSOR_CONTACT = "sponsor_contact", "Sponsor contact"
     ORGANIZER = "organizer", "Organizer"
+    COC_TEAM = "coc_team", "Code of Conduct team"
 
 
 #: Computed from other records, so they can never be granted by hand.
@@ -62,6 +63,11 @@ GRANTABLE_ROLES = frozenset(Role) - DERIVED_ROLES
 
 #: Holding the key role implies holding the values too. CFP and grant reviewing
 #: stay separate on purpose -- a CFP chair gains no say over travel grants.
+#:
+#: COC_TEAM is implied by nothing, including SUPER_ADMIN. A Code of Conduct report
+#: may be about an organizer, so membership of that team has to be granted to a
+#: named person rather than falling out of being senior. The same reasoning keeps
+#: superusers out of the review queues.
 IMPLIES = {
     Role.CFP_CHAIR: frozenset({Role.CFP_REVIEWER}),
     Role.GRANT_CHAIR: frozenset({Role.GRANT_REVIEWER, Role.FINANCE}),

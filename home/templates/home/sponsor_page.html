@@ -8,7 +8,7 @@
 <section class="relative min-h-[22rem] md:min-h-[28rem] flex items-center overflow-hidden">
     {% if page.hero_background %}
         {% with hero_img_alt=page.hero_background_alt|default:page.hero_headline %}
-        {% image page.hero_background fill-1920x800 class="absolute inset-0 w-full h-full object-cover" alt=hero_img_alt %}
+        {% image page.hero_background fill-1920x800 format-webp preserve-svg class="absolute inset-0 w-full h-full object-cover" alt=hero_img_alt loading="eager" fetchpriority="high" decoding="async" %}
         {% endwith %}
     {% endif %}
     {% if page.hero_overlay_style == 'dark' %}
@@ -169,7 +169,7 @@
                     <a href="{{ sponsor.url }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center">
                     {% endif %}
                         {% if sponsor.logo %}
-                        {% image sponsor.logo max-240x120 class="max-h-16 w-auto object-contain" alt=sponsor.alt_text %}
+                        {% image sponsor.logo max-240x120 format-webp preserve-svg class="max-h-16 w-auto object-contain" alt=sponsor.alt_text loading="lazy" decoding="async" %}
                         {% else %}
                         <span class="text-gray-700 font-medium">{{ sponsor.name }}</span>
                         {% endif %}

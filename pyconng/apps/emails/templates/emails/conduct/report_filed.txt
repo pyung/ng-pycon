@@ -1,0 +1,14 @@
+{% extends "emails/_base.txt" %}{% block content %}A Code of Conduct report has been filed for PyCon Nigeria {{ conference_year }}.
+
+{{ reference }}
+{{ summary }}
+
+Reporter: {{ reporter }}.{% if can_reply %} They left an email address, so they can be answered directly.{% else %} They left no way to reach them, so no reply is possible.{% endif %}
+
+Read the report: {{ admin_url }}
+
+The details are deliberately not in this email. Please do not forward it, and
+please do not discuss the report outside the Code of Conduct team.
+
+PyCon Nigeria
+{% endblock %}

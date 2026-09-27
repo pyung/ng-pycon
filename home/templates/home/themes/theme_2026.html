@@ -98,7 +98,12 @@ undraw SVG illustrations.  All 12 editable sections rendered.
 
     {# Wave SVG at the very bottom of the hero #}
     <div class="hero-waves">
-        <img src="{% static 'assets/2026/svg/home-waves.svg' %}" alt="" aria-hidden="true">
+        {% comment %}In the hero, so eager rather than lazy -- deferring the one
+        image above the fold is the one case where lazy loading makes a page
+        slower to look finished.{% endcomment %}
+        <img src="{% static 'assets/2026/svg/home-waves.svg' %}" alt="" aria-hidden="true"
+             width="900" height="600" loading="eager" decoding="async"
+             style="width:100%;height:auto">
     </div>
 </section>
 
@@ -117,11 +122,16 @@ undraw SVG illustrations.  All 12 editable sections rendered.
                 {% endif %}
             </div>
             <div class="info-layout__visual flex justify-center">
+                {% comment %}height="auto" is not a valid intrinsic size -- the
+                browser ignored it and reserved no space, so this illustration
+                shoved the section below it down as it arrived. The numbers are
+                the SVG's own viewBox ratio; CSS still controls the rendered
+                size.{% endcomment %}
                 <img src="{% static 'assets/2026/svg/idea.svg' %}"
                      alt="Conference idea illustration"
                      class="section-illustration info-layout__illustration"
-                     width="320"
-                     height="auto">
+                     width="939" height="838"
+                     loading="lazy" decoding="async">
             </div>
         </div>
     </div>
@@ -203,7 +213,9 @@ undraw SVG illustrations.  All 12 editable sections rendered.
                 <img src="{% static 'assets/2026/svg/showing-support.svg' %}"
                      alt="Online community illustration"
                      class="section-illustration"
-                     style="max-width:360px">
+                     width="661" height="514"
+                     loading="lazy" decoding="async"
+                     style="max-width:360px;height:auto">
             </div>
         </div>
     </div>
@@ -260,7 +272,7 @@ undraw SVG illustrations.  All 12 editable sections rendered.
                     <a href="{{ sponsor.url }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-full">
                     {% endif %}
                         {% if sponsor.logo %}
-                        {% image sponsor.logo max-200x100 class="max-h-16 max-w-full object-contain" alt=sponsor.alt_text %}
+                        {% image sponsor.logo max-200x100 format-webp preserve-svg class="max-h-16 max-w-full object-contain" alt=sponsor.alt_text loading="lazy" decoding="async" %}
                         {% else %}
                         <span class="text-gray-600 font-medium text-sm">{{ sponsor.name }}</span>
                         {% endif %}
@@ -283,7 +295,9 @@ undraw SVG illustrations.  All 12 editable sections rendered.
     <img src="{% static 'assets/2026/svg/stars.svg' %}"
          alt="" aria-hidden="true"
          class="absolute right-0 top-1/2 -translate-y-1/2 opacity-10 pointer-events-none"
-         style="max-width:420px">
+         width="800" height="589"
+         loading="lazy" decoding="async"
+         style="max-width:420px;height:auto">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <h2 class="section-title-2026">{{ page.year_navigation_title }}</h2>

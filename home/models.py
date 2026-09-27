@@ -395,7 +395,13 @@ class HomePage(Page):
         "program.YearArchivePage",
         "program.SchedulePage",
         "program.SpeakersPage",
-    ]  # Standard pages, sponsor page, meetups index, year archives, nested year homepages
+        "conduct.CodeOfConductPage",
+        "info.FAQPage",
+        "info.ContactPage",
+        "info.TravelPage",
+        "blog.BlogIndexPage",
+    ]  # Standard pages, sponsor page, meetups index, year archives, nested year
+    # homepages, and the module 2 pages: Code of Conduct, FAQ, contact, travel, blog.
 
     def get_default_child_class(self):
         from .models import StandardPage

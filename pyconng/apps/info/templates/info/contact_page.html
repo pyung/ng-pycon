@@ -1,0 +1,85 @@
+{% extends base_template %}
+{% load wagtailcore_tags %}
+
+{% block body_class %}template-contactpage{% if page_theme %} {{ page_theme }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+    <section class="px-4 pt-16 pb-16">
+        <div class="max-w-3xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">{{ page.title }}</h1>
+            {% if page.intro %}
+            <div class="mt-4 prose max-w-none text-gray-600">{{ page.intro|richtext }}</div>
+            {% endif %}
+
+            {% if page.contact_methods %}
+            {% comment %}The routes that are not a form, first. Somebody at the venue
+            with a dying phone needs a number, not a textarea.{% endcomment %}
+            <ul class="mt-8 grid gap-4 sm:grid-cols-2 list-none p-0 m-0">
+                {% for block in page.contact_methods %}
+                <li class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">{{ block.value.label }}</p>
+                    <p class="mt-1 font-medium text-gray-900 break-words">
+                        {% if block.value.url %}
+                        <a href="{{ block.value.url }}" class="text-teal-700 hover:underline">{{ block.value.detail }}</a>
+                        {% else %}{{ block.value.detail }}{% endif %}
+                    </p>
+                    {% if block.value.note %}
+                    <p class="mt-1 text-sm text-gray-500">{{ block.value.note }}</p>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if page.form_fields.all %}
+            <div class="mt-10 bg-white rounded-xl border border-gray-100 shadow-sm p-6 md:p-8">
+                <h2 class="text-xl font-bold text-gray-900">Send us a message</h2>
+                {% if page.response_time %}
+                <p class="mt-1 text-sm text-gray-500">{{ page.response_time }}</p>
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                <div class="mt-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800" role="alert">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}
+
+                <form action="{% pageurl page %}" method="post" enctype="multipart/form-data"
+                      class="pycon-form mt-6 space-y-5" novalidate>
+                    {% csrf_token %}
+
+                    {% comment %}The honeypot. Hidden from sight and from the
+                    accessibility tree, and out of the tab order, so only a bot
+                    reaches it. Checked in ContactPage.serve().{% endcomment %}
+                    <div class="hidden" aria-hidden="true">
+                        <input type="text" name="{{ page.HONEYPOT_FIELD }}" value=""
+                               tabindex="-1" autocomplete="off">
+                    </div>
+
+                    {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(required)</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <button type="submit"
+                            class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                        Send message
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

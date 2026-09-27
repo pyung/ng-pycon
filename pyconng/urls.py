@@ -65,6 +65,10 @@ urlpatterns = [
 
     # Programme actions (must be before Wagtail catch-all)
     path("programme/", include("program.urls")),
+
+    # Code of Conduct reporting. Not behind a login: requiring an account to
+    # report a breach excludes the people most likely to need to.
+    path("conduct/", include("conduct.urls")),
     
     # Year-specific routing using custom view. Past years are read-only snapshots.
     path("<int:year>/search/", search_views.search, name="year_search"),

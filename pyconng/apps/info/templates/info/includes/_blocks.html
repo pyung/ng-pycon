@@ -1,0 +1,126 @@
+{% load wagtailcore_tags wagtailimages_tags %}
+{% comment %}
+  The shared block renderer for the practical pages.
+
+  One include rather than a copy in each template, so an accessibility fix -- an
+  image that needs alt text, a heading level, a link that opens a new tab -- is
+  made once. Each block is rendered explicitly rather than through include_block,
+  because Wagtail's default would give an image the filename as its alt text.
+{% endcomment %}
+{% for block in blocks %}
+    {% if block.block_type == "heading" %}
+        <h2 class="text-2xl font-bold text-gray-900 mt-10 mb-3">{{ block.value }}</h2>
+
+    {% elif block.block_type == "paragraph" %}
+        <div class="prose max-w-none text-gray-700">{{ block.value|richtext }}</div>
+
+    {% elif block.block_type == "image" %}
+        <figure class="my-6">
+            {% image block.value.image width-1000 format-webp preserve-svg class="w-full h-auto rounded-xl" alt=block.value.alt loading="lazy" decoding="async" %}
+            {% if block.value.caption %}
+            <figcaption class="mt-2 text-sm text-gray-500">{{ block.value.caption }}</figcaption>
+            {% endif %}
+        </figure>
+
+    {% elif block.block_type == "callout" %}
+        <aside class="my-6 bg-amber-50 border border-amber-200 rounded-xl p-5">
+            {% if block.value.title %}
+            <h2 class="text-base font-bold text-amber-900 mb-1">{{ block.value.title }}</h2>
+            {% endif %}
+            <div class="text-sm text-amber-900 prose prose-sm max-w-none">{{ block.value.text|richtext }}</div>
+        </aside>
+
+    {% elif block.block_type == "venue" %}
+        <section class="my-8 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <h2 class="text-xl font-bold text-gray-900">{{ block.value.name }}</h2>
+            <p class="mt-2 text-gray-700 whitespace-pre-line">{{ block.value.address }}</p>
+            {% if block.value.map_url %}
+            <p class="mt-3">
+                <a href="{{ block.value.map_url }}" target="_blank" rel="noopener noreferrer"
+                   class="text-teal-700 font-medium hover:underline">
+                    Open in maps<span class="sr-only"> (opens in a new tab)</span>
+                </a>
+            </p>
+            {% endif %}
+            {% if block.value.image.image %}
+            <figure class="mt-4">
+                {% image block.value.image.image fill-1000x560 format-webp preserve-svg class="w-full h-auto rounded-lg" alt=block.value.image.alt loading="lazy" decoding="async" %}
+                {% if block.value.image.caption %}
+                <figcaption class="mt-2 text-sm text-gray-500">{{ block.value.image.caption }}</figcaption>
+                {% endif %}
+            </figure>
+            {% endif %}
+            {% if block.value.directions %}
+            <div class="mt-4">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Finding the entrance</h3>
+                <div class="mt-1 prose prose-sm max-w-none text-gray-700">{{ block.value.directions|richtext }}</div>
+            </div>
+            {% endif %}
+            {% if block.value.accessibility %}
+            <div class="mt-4 rounded-lg bg-teal-50 border border-teal-200 p-4">
+                <h3 class="text-sm font-semibold text-teal-900">Access</h3>
+                <div class="mt-1 prose prose-sm max-w-none text-teal-900">{{ block.value.accessibility|richtext }}</div>
+            </div>
+            {% endif %}
+        </section>
+
+    {% elif block.block_type == "places_to_stay" %}
+        <section class="my-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Places to stay</h2>
+            <ul class="grid gap-4 sm:grid-cols-2 list-none p-0 m-0">
+                {% for hotel in block.value %}
+                <li class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h3 class="font-semibold text-gray-900">
+                        {% if hotel.url %}
+                        <a href="{{ hotel.url }}" target="_blank" rel="noopener noreferrer" class="text-teal-700 hover:underline">
+                            {{ hotel.name }}<span class="sr-only"> (opens in a new tab)</span>
+                        </a>
+                        {% else %}{{ hotel.name }}{% endif %}
+                    </h3>
+                    <dl class="mt-2 text-sm text-gray-600 space-y-1">
+                        {% if hotel.distance %}
+                        <div class="flex gap-2"><dt class="font-medium text-gray-500">From the venue</dt><dd>{{ hotel.distance }}</dd></div>
+                        {% endif %}
+                        {% if hotel.price_band %}
+                        <div class="flex gap-2"><dt class="font-medium text-gray-500">Around</dt><dd>{{ hotel.price_band }}</dd></div>
+                        {% endif %}
+                    </dl>
+                    {% if hotel.notes %}
+                    <p class="mt-2 text-sm text-gray-500">{{ hotel.notes }}</p>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            <p class="mt-3 text-xs text-gray-500">
+                Listed for convenience. PyCon Nigeria has no arrangement with these
+                places, and prices change without notice.
+            </p>
+        </section>
+
+    {% elif block.block_type == "getting_here" %}
+        <section class="my-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Getting here</h2>
+            <dl class="space-y-4">
+                {% for option in block.value %}
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <dt class="font-semibold text-gray-900">{{ option.mode }}</dt>
+                    <dd class="mt-1 prose prose-sm max-w-none text-gray-700">{{ option.detail|richtext }}</dd>
+                </div>
+                {% endfor %}
+            </dl>
+        </section>
+
+    {% elif block.block_type == "questions" %}
+        <section class="my-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Questions</h2>
+            <div class="space-y-3">
+                {% for item in block.value %}
+                <details class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <summary class="font-semibold text-gray-900 cursor-pointer">{{ item.question }}</summary>
+                    <div class="mt-2 prose prose-sm max-w-none text-gray-700">{{ item.answer|richtext }}</div>
+                </details>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+{% endfor %}

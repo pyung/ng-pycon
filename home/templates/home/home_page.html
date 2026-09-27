@@ -345,7 +345,7 @@
                     <a href="{{ sponsor.url }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-full">
                     {% endif %}
                         {% if sponsor.logo %}
-                        {% image sponsor.logo max-200x100 class="max-h-16 max-w-full object-contain" alt=sponsor.alt_text %}
+                        {% image sponsor.logo max-200x100 format-webp preserve-svg class="max-h-16 max-w-full object-contain" alt=sponsor.alt_text loading="lazy" decoding="async" %}
                         {% else %}
                         <span class="text-gray-600">{{ sponsor.name }}</span>
                         {% endif %}

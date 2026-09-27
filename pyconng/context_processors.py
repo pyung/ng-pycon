@@ -7,6 +7,11 @@ context keys are unchanged: templates carry on reading ``conference_year``,
 ``conference_theme``, ``conference_year_info``, ``available_years``,
 ``current_year``, ``is_current_year``, ``is_year_specific_url`` and
 ``base_template``.
+
+Two groups of keys were added for the accessibility and performance pass:
+``fonts_href``, the theme's web-font stylesheet, and the footer chrome
+(``newsletter_title``, ``footer_links``, the social URLs and so on) that the
+2026 footer template had always read by bare name without anything supplying it.
 """
 
 import logging
@@ -24,6 +29,7 @@ from editions.current import (
     known_years,
     published_editions,
 )
+from editions.webfonts import fonts_href
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +82,10 @@ def conference_context(request):
         "is_current_year": year == now_year,
         "is_year_specific_url": is_year_specific_url,
         "base_template": base_template,
+        # The theme's typefaces. These used to be an @import in each theme's CSS
+        # that PostCSS dropped, so no edition has ever loaded the fonts it was
+        # designed with; the base template emits a <link> for this instead.
+        "fonts_href": fonts_href(edition.theme if edition else None),
     }
 
 
@@ -164,9 +174,45 @@ def navigation_context(request):
         except Exception:  # noqa: BLE001
             pass
 
-    return {
+    context = {
         "navigation_menu_items": navigation_items,
         "page_conference_year": page_year,
         "nav_login_href": nav_login_href,
         "nav_login_label": nav_login_label,
+    }
+    context.update(_footer_context(home_page))
+    return context
+
+
+#: HomePage fields the site footer reads. The 2026 footer template asks for them
+#: by bare name -- ``{{ newsletter_title }}``, not ``{{ page.newsletter_title }}``
+#: -- so on a Wagtail page they resolved to nothing and on every other view there
+#: was nothing to resolve. The result was a footer permanently showing defaults:
+#: no newsletter form, no social icons at all, and three hard-coded links to
+#: pages that do not exist. Supplying them here fixes every page at once, and
+#: keeps working on views that have no ``page`` in context.
+FOOTER_FIELDS = (
+    "footer_copyright",
+    "footer_links",
+    "newsletter_title",
+    "newsletter_description",
+    "twitter_url",
+    "facebook_url",
+    "linkedin_url",
+    "instagram_url",
+    "youtube_url",
+    "github_url",
+)
+
+
+def _footer_context(home_page):
+    """
+    Footer, social and newsletter values from the edition's homepage.
+
+    Returns every key even when there is no homepage, so a template can test a
+    value without a missing-variable silently reading as empty either way.
+    """
+    return {
+        field: getattr(home_page, field, "") or ""
+        for field in FOOTER_FIELDS
     }

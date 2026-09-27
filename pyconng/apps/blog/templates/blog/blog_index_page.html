@@ -1,0 +1,91 @@
+{% extends base_template %}
+{% load wagtailcore_tags %}
+
+{% block body_class %}template-blogindexpage{% if page_theme %} {{ page_theme }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50">
+
+    <section class="px-4 pt-16 pb-8">
+        <div class="max-w-5xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">{{ page.title }}</h1>
+            {% if page.intro %}
+            <div class="mt-4 prose max-w-none text-gray-600">{{ page.intro|richtext }}</div>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if tags %}
+    <section class="px-4 pb-8">
+        <nav class="max-w-5xl mx-auto" aria-label="Filter by tag">
+            <h2 class="sr-only">Filter by tag</h2>
+            <ul class="flex flex-wrap gap-2 list-none p-0 m-0">
+                <li>
+                    <a href="{% pageurl page %}"
+                       {% if not selected_tag %}aria-current="page"{% endif %}
+                       class="inline-block px-3 py-1.5 rounded-full text-sm font-medium border {% if not selected_tag %}bg-gray-900 text-white border-gray-900{% else %}bg-white text-gray-600 border-gray-300 hover:border-gray-400{% endif %}">
+                        All posts
+                    </a>
+                </li>
+                {% for tag in tags %}
+                <li>
+                    <a href="{% pageurl page %}?tag={{ tag.slug }}"
+                       {% if selected_tag == tag.slug %}aria-current="page"{% endif %}
+                       class="inline-block px-3 py-1.5 rounded-full text-sm font-medium border {% if selected_tag == tag.slug %}bg-gray-900 text-white border-gray-900{% else %}bg-white text-gray-600 border-gray-300 hover:border-gray-400{% endif %}">
+                        {{ tag.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </section>
+    {% endif %}
+
+    <section class="px-4 pb-12">
+        <div class="max-w-5xl mx-auto">
+            {% if posts %}
+            <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {% for post in posts %}
+                    {% include "blog/includes/_post_card.html" with post=post index_page=page %}
+                {% endfor %}
+            </div>
+
+            {% if posts.paginator.num_pages > 1 %}
+            <nav class="mt-10 flex items-center justify-between" aria-label="Pagination">
+                <div>
+                    {% if posts.has_previous %}
+                    <a href="?{% if selected_tag %}tag={{ selected_tag }}&amp;{% endif %}page={{ posts.previous_page_number }}"
+                       class="px-4 py-2 rounded-lg bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400">
+                        &larr; Newer
+                    </a>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-gray-500">
+                    Page {{ posts.number }} of {{ posts.paginator.num_pages }}
+                </p>
+                <div>
+                    {% if posts.has_next %}
+                    <a href="?{% if selected_tag %}tag={{ selected_tag }}&amp;{% endif %}page={{ posts.next_page_number }}"
+                       class="px-4 py-2 rounded-lg bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400">
+                        Older &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <p class="text-gray-500">
+                {% if selected_tag %}
+                    No posts tagged &ldquo;{{ selected_tag }}&rdquo;.
+                    <a href="{% pageurl page %}" class="text-teal-700 hover:underline">Show all posts</a>.
+                {% else %}
+                    {{ page.empty_text }}
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+    </section>
+
+</div>
+{% endblock %}

@@ -1,47 +1,75 @@
 {% load static wagtailcore_tags wagtailuserbar %}
+{% comment %}
+  The one base template.
 
+  base_2024.html, base_2025.html and base_2026.html were near-identical copies of
+  this file, which meant an accessibility or performance fix had to be made four
+  times and was in practice made once. They are thin children now: everything
+  shared lives here, and a year only overrides what is genuinely its own.
+
+  A year with no base template of its own -- 2027, until someone writes one --
+  falls back to this file, so it has to stand on its own for a future edition.
+{% endcomment %}
 <!DOCTYPE html>
 <html lang="en" x-data="theme('{{ conference_theme }}')" :data-theme="currentTheme">
     <head>
         <meta charset="utf-8" />
+        {% comment %}
+          Read through `page` rather than bare `seo_title`/`title`: base_2026.html
+          used the bare names, which resolve to nothing on a Wagtail page, so every
+          page on the current theme shipped a title of " - PyCon Nigeria 2026" and
+          no meta description. WCAG 2.4.2 asks for a title that describes the page.
+        {% endcomment %}
         <title>
-            {% block title %}
-            {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
-            {% endblock %}
-            {% block title_suffix %}
-            {% if site_name %} - {{ site_name }} {{ conference_year }}{% endif %}
-            {% endblock %}
+            {% block title %}{% firstof page.seo_title page.title %}{% endblock %}
+            {% comment %}Skip the suffix when the page is already named after the
+            site: the homepage is titled "PyCon Nigeria 2026", and appending the
+            suffix made its title read "PyCon Nigeria 2026 - PyCon Nigeria 2026".{% endcomment %}
+            {% block title_suffix %}{% if site_name and site_name not in page.title|default:"" %} - {{ site_name }} {{ conference_year }}{% endif %}{% endblock %}
         </title>
         {% if page.search_description %}
         <meta name="description" content="{{ page.search_description }}" />
         {% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
 
         {% if request.in_preview_panel %}
         <base target="_blank">
         {% endif %}
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        {% block webfonts %}{% include "includes/_webfonts.html" %}{% endblock %}
 
-        {% comment %}Load theme-specific CSS only (2024.css, 2025.css, or 2026.css){% endcomment %}
-        <link rel="stylesheet" type="text/css" href="{% static 'css/' %}{{ conference_theme|default:'2026' }}.css">
+        {% comment %}
+          One stylesheet per theme. The default only applies when there is no
+          edition at all, where the house style is the best guess.
+
+          Built as a single path so ManifestStaticFilesStorage can hash it. The
+          old form asked the static tag for the "css/" directory and appended the
+          theme name after it, so the manifest had nothing to match and the
+          biggest asset on the site shipped with no content hash -- browsers kept
+          serving the previous deploy's CSS until they happened to revalidate.
+        {% endcomment %}
+        {% block stylesheet %}
+        {% with theme_slug=conference_theme|default:'2026' %}
+        <link rel="stylesheet" type="text/css" href="{% static 'css/'|add:theme_slug|add:'.css' %}">
+        {% endwith %}
+        {% endblock %}
 
         {% block extra_css %}{% endblock %}
 
         <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
         <meta name="theme-color" content="{{ conference_year_info.colors.0 }}">
-        
+
         <meta property="og:type" content="website">
-        <meta property="og:title" content="{% block og_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %} - {{ site_name }} {{ conference_year }}{% endblock %}">
+        <meta property="og:title" content="{% block og_title %}{% firstof page.seo_title page.title site_name %} - {{ site_name }} {{ conference_year }}{% endblock %}">
         <meta property="og:description" content="{% block og_description %}{{ page.search_description|default:'PyCon Nigeria - The premier Python conference in Nigeria' }}{% endblock %}">
         <meta property="og:image" content="{% block og_image %}{% static 'images/og-image.jpg' %}{% endblock %}">
-        
+
         <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:title" content="{% block twitter_title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %} - {{ site_name }} {{ conference_year }}{% endblock %}">
+        <meta property="twitter:title" content="{% block twitter_title %}{% firstof page.seo_title page.title site_name %} - {{ site_name }} {{ conference_year }}{% endblock %}">
         <meta property="twitter:description" content="{% block twitter_description %}{{ page.search_description|default:'PyCon Nigeria - The premier Python conference in Nigeria' }}{% endblock %}">
         <meta property="twitter:image" content="{% block twitter_image %}{% static 'images/og-image.jpg' %}{% endblock %}">
-        
+
         <meta name="conference-year" content="{{ conference_year }}">
         <meta name="conference-theme" content="{{ conference_theme }}">
         <meta name="conference-name" content="{{ conference_year_info.name }}">
@@ -49,49 +77,44 @@
     </head>
 
     <body class="{% block body_class %}{% endblock %}{% if conference_theme %} theme-{{ conference_theme }}{% endif %} font-sans antialiased bg-gray-50 text-gray-900">
+        {% comment %}
+          First focusable thing on the page, so a keyboard or screen-reader visitor
+          can get past a navigation bar that is otherwise twenty-odd tab stops deep.
+          Hidden until focused -- see .skip-link in the theme CSS.
+        {% endcomment %}
+        <a class="skip-link" href="#main-content">Skip to main content</a>
+
         {% wagtailuserbar %}
 
         {% block header %}
         {% include "includes/nav_header.html" %}
         {% endblock %}
 
-        <!-- <div class="fixed top-4 right-4 z-50" x-data="theme('{{ conference_theme }}')">
-            <div class="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Conference Year:</label>
-                <select onchange="
-                    if (this.value == '{{ current_year }}') {
-                        window.location.href = '/';
-                    } else {
-                        window.location.href = '/' + this.value + '/';
-                    }
-                " class="block w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {% for year, info in available_years.items %}
-                    <option value="{{ year }}" {% if year == conference_year %}selected{% endif %}>
-                        {{ year }} - {{ info.name }}{% if year == current_year %} (Latest){% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-                <div class="mt-2 text-xs text-gray-500">
-                    {{ conference_year_info.description }}
-                </div>
-            </div>
-        </div> -->
-
-        {% block content %}{% endblock %}
+        {% comment %}The one main landmark. Screen readers jump to it, and the skip
+        link above needs a target that exists on every page.{% endcomment %}
+        <main id="main-content">
+            {% block content %}{% endblock %}
+        </main>
 
         {% block footer %}{% endblock %}
+        {% block site_footer %}{% endblock %}
 
         <script type="importmap">
         {
             "imports": {
-                "alpinejs": "https://cdn.jsdelivr.net/npm/alpinejs@3/dist/module.esm.js"
+                "alpinejs": "{% static 'js/vendor/alpine.esm.js' %}"
             }
         }
         </script>
         <script type="module" src="{% static 'js/pyconng.js' %}"></script>
-        
-        {% comment %}Load theme-specific JS based on conference year{% endcomment %}
-        <script src="{% static 'js/themes/theme_' %}{{ conference_theme|default:'2026' }}.js" defer></script>
+
+        {% comment %}Theme JavaScript, as one hashable path for the same reason as
+        the stylesheet above.{% endcomment %}
+        {% block theme_js %}
+        {% if conference_theme %}
+        <script src="{% static 'js/themes/theme_'|add:conference_theme|add:'.js' %}" defer></script>
+        {% endif %}
+        {% endblock %}
 
         {% block extra_js %}{% endblock %}
     </body>

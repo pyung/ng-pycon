@@ -2,8 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 2024 fonts */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Fonts are loaded by the base template, not from here: a CSS @import is
+   only valid before any other rule, so PostCSS dropped the one that used to
+   sit on this line and no theme has ever loaded its typefaces. The URLs now
+   live in pyconng/apps/editions/webfonts.py. */
 
 /* ========== Base theme infrastructure (merged from _base.css) ========== */
 :root {
@@ -403,4 +405,116 @@
   [data-theme="2024"] .theme-hero h1 { font-size: var(--theme-text-3xl); }
   [data-theme="2024"] .theme-grid { grid-template-columns: 1fr; gap: var(--theme-spacing-md); }
   [data-theme="2024"] .theme-section { padding: var(--theme-spacing-2xl) 0; }
+}
+
+/* ==========================================================================
+   Accessibility primitives -- identical in every theme.
+
+   Kept in each theme's source rather than a shared partial because the three
+   input files do not import one another; if a fourth theme is added, copy this
+   block into it. The audit in pyconng.apps.quality fails without the skip link.
+   ========================================================================== */
+
+/*
+ * Skip link: the first focusable element on every page. Off-screen until
+ * focused, then pinned to the top so it cannot be missed. Without it a keyboard
+ * or screen-reader visitor tabs through the whole navigation on every page
+ * before reaching the content (WCAG 2.4.1).
+ */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: var(--theme-primary, #0f766e);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 150ms ease-in-out;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/*
+ * A visible focus ring for anything that has not asked for its own. Uses
+ * :focus-visible so it appears for keyboard users without ringing every mouse
+ * click (WCAG 2.4.7). Elements carrying Tailwind's focus:ring-* utilities keep
+ * those: a utility class outranks these element selectors.
+ */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--theme-accent, var(--theme-primary, #0f766e));
+  outline-offset: 2px;
+}
+
+/*
+ * Respect a reduced-motion preference (WCAG 2.3.3). Animations are stopped
+ * rather than transitions: the looping ones -- bounce-light, tech-pulse,
+ * creative-float -- are the ones that cause trouble, while a 200ms colour
+ * transition on hover does not, and some themes deliberately keep those.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Fields on an admin-defined form (the contact page's, built with
+ * wagtail.contrib.forms). Those widgets are plain Django ones with no classes to
+ * hook, so the form wrapper carries the class and the fields are styled through
+ * it. A visible focus ring is part of the rule rather than left to the browser.
+ */
+.pycon-form input[type="text"],
+.pycon-form input[type="email"],
+.pycon-form input[type="url"],
+.pycon-form input[type="tel"],
+.pycon-form input[type="number"],
+.pycon-form input[type="date"],
+.pycon-form input[type="datetime-local"],
+.pycon-form select,
+.pycon-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+}
+.pycon-form textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+.pycon-form input:focus-visible,
+.pycon-form select:focus-visible,
+.pycon-form textarea:focus-visible {
+  outline: 3px solid var(--theme-primary, #0f766e);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.pycon-form input[type="checkbox"],
+.pycon-form input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+}
+.pycon-form ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pycon-form ul li {
+  margin-bottom: 0.375rem;
 }

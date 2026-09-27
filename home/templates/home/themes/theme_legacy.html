@@ -14,10 +14,9 @@ conferences from several years ago.
 <link rel="stylesheet" href="{% static 'css/themes/theme_legacy.css' %}">
 {% endblock %}
 
-{% block extra_js %}
-<!-- Legacy Theme JavaScript -->
-<script src="{% static 'js/themes/theme_legacy.js' %}" defer></script>
-{% endblock %}
+{% comment %}No extra_js block: the base template already loads this theme's
+JavaScript from `conference_theme`, so declaring it here fetched and ran the same
+file a second time on every page of the archive.{% endcomment %}
 
 {% block content %}
 <div class="content-wrapper">
@@ -118,9 +117,14 @@ conferences from several years ago.
             {% for sponsor in sponsors %}
             <div style="display: inline-block; margin: 1rem; padding: 1rem;">
                 {% if sponsor.logo %}
+                {% comment %}The raw file, not a rendition: this theme predates the
+                image pipeline. Lazy, since the sponsor wall is always well below
+                the fold, and sized from the file so it reserves its space.{% endcomment %}
                 <img src="{{ sponsor.logo.file.url }}"
                      alt="{{ sponsor.alt_text }}"
-                     style="max-width: 200px; max-height: 100px;">
+                     width="{{ sponsor.logo.width }}" height="{{ sponsor.logo.height }}"
+                     loading="lazy" decoding="async"
+                     style="max-width: 200px; max-height: 100px; width: auto; height: auto;">
                 {% endif %}
                 <p style="margin-top: 0.5rem;">
                     <strong>{{ sponsor.name }}</strong><br>

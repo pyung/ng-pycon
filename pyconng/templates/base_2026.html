@@ -1,178 +1,116 @@
-{% load static wagtailcore_tags wagtailuserbar %}
+{% extends "base.html" %}
+{% comment %}
+  The 2026 edition's base template: base.html plus the 2026 site footer.
 
-<!DOCTYPE html>
-<html lang="en" x-data="theme('{{ conference_theme }}')" :data-theme="currentTheme">
-    <head>
-        <meta charset="utf-8" />
-        <title>
-            {% block title %}
-            {% if seo_title %}{{ seo_title }}{% else %}{{ title }}{% endif %}
-            {% endblock %}
-            {% block title_suffix %}
-            {% if site_name %} - {{ site_name }} {{ conference_year }}{% endif %}
-            {% endblock %}
-        </title>
-        {% if search_description %}
-        <meta name="description" content="{{ search_description }}" />
-        {% endif %}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+  The footer reads `newsletter_title`, `footer_links`, `twitter_url` and the rest
+  as bare names. Those are HomePage fields, so they resolved to nothing and the
+  whole footer had been rendering its defaults -- no newsletter form, no social
+  icons at all, and hard-coded links to /privacy/, /faqs/ and /contact/. They are
+  supplied by the site_chrome context processor now, so every page gets the real
+  values whether or not the page being rendered is the HomePage.
+{% endcomment %}
+{% load static wagtailcore_tags %}
 
-        {% if request.in_preview_panel %}
-        <base target="_blank">
-        {% endif %}
+{% block site_footer %}
+<footer class="footer-2026">
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-        {% comment %}Load theme-specific CSS only{% endcomment %}
-        <link rel="stylesheet" type="text/css" href="{% static 'css/' %}{{ conference_theme|default:'2026' }}.css">
-
-        {% block extra_css %}{% endblock %}
-
-        <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
-        <meta name="theme-color" content="{{ conference_year_info.colors.0 }}">
-        
-        <meta property="og:type" content="website">
-        <meta property="og:title" content="{% block og_title %}{% if seo_title %}{{ seo_title }}{% else %}{{ title }}{% endif %} - {{ site_name }} {{ conference_year }}{% endblock %}">
-        <meta property="og:description" content="{% block og_description %}{{ search_description|default:'PyCon Nigeria - The premier Python conference in Nigeria' }}{% endblock %}">
-        <meta property="og:image" content="{% block og_image %}{% static 'images/og-image.jpg' %}{% endblock %}">
-        
-        <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:title" content="{% block twitter_title %}{% if seo_title %}{{ seo_title }}{% else %}{{ title }}{% endif %} - {{ site_name }} {{ conference_year }}{% endblock %}">
-        <meta property="twitter:description" content="{% block twitter_description %}{{ search_description|default:'PyCon Nigeria - The premier Python conference in Nigeria' }}{% endblock %}">
-        <meta property="twitter:image" content="{% block twitter_image %}{% static 'images/og-image.jpg' %}{% endblock %}">
-        
-        <meta name="conference-year" content="{{ conference_year }}">
-        <meta name="conference-theme" content="{{ conference_theme }}">
-        <meta name="conference-name" content="{{ conference_year_info.name }}">
-        <meta name="current-year" content="{{ current_year }}">
-    </head>
-
-    <body class="{% block body_class %}{% endblock %}{% if conference_theme %} theme-{{ conference_theme }}{% endif %} font-sans antialiased bg-gray-50 text-gray-900">
-        {% wagtailuserbar %}
-
-        {% block header %}
-        {% include "includes/nav_header.html" %}
-        {% endblock %}
-
-        {% block content %}{% endblock %}
-
-        {% block footer %}{% endblock %}
-
-
-        <footer class="footer-2026">
-
-            {% if newsletter_title %}
-            <div class="dark-section" style="padding:4rem 0 3rem">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 class="section-title-2026 text-2xl md:text-3xl mb-2" style="color:#fff">{{ newsletter_title }}</h2>
-                    {% if newsletter_description %}
-                    <p class="mb-6 text-base" style="color:var(--theme-text-light);max-width:480px;margin-left:auto;margin-right:auto">
-                        {{ newsletter_description }}
-                    </p>
-                    {% endif %}
-                    <form id="newsletter-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
-                        data-ajax="true" action="{% url 'newsletter_signup' %}" method="post">
-                        {% csrf_token %}
-                        <input type="email" name="email" id="newsletter-email"
-                            placeholder="you@example.com" required
-                            class="newsletter-input flex-1 rounded-full">
-                        <button type="submit" class="btn-gold px-6 py-3 text-sm">Subscribe</button>
-                    </form>
-                    <div id="newsletter-message" class="mt-3 text-sm"></div>
-                </div>
-            </div>
+    {% if newsletter_title %}
+    <div class="dark-section" style="padding:4rem 0 3rem">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="section-title-2026 text-2xl md:text-3xl mb-2" style="color:#fff">{{ newsletter_title }}</h2>
+            {% if newsletter_description %}
+            <p class="mb-6 text-base" style="color:var(--theme-text-light);max-width:480px;margin-left:auto;margin-right:auto">
+                {{ newsletter_description }}
+            </p>
             {% endif %}
+            <form id="newsletter-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+                data-ajax="true" action="{% url 'newsletter_signup' %}" method="post">
+                {% csrf_token %}
+                {% comment %}A placeholder is not a label: it disappears on focus and
+                screen readers are not obliged to read it (WCAG 3.3.2).{% endcomment %}
+                <label for="newsletter-email" class="sr-only">Email address</label>
+                <input type="email" name="email" id="newsletter-email"
+                    placeholder="you@example.com" required autocomplete="email"
+                    class="newsletter-input flex-1 rounded-full">
+                <button type="submit" class="btn-gold px-6 py-3 text-sm">Subscribe</button>
+            </form>
+            <p id="newsletter-message" class="mt-3 text-sm" role="status" aria-live="polite"></p>
+        </div>
+    </div>
+    {% endif %}
 
-            <div style="background-color:var(--theme-dark);padding:3rem 0 2rem;border-top:1px solid rgba(255,255,255,0.07)">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="grid md:grid-cols-3 gap-8 mb-8">
-                        {# Brand column #}
-                        <div>
-                            <h3 class="text-xl font-bold mb-3 text-white">{{ site_name }}</h3>
-                            <p class="text-sm" style="color:var(--theme-text-light)">
-                                {{ site_tagline|default:"The premier Python conference in Nigeria." }}
-                            </p>
-                        </div>
+    <div style="background-color:var(--theme-dark);padding:3rem 0 2rem;border-top:1px solid rgba(255,255,255,0.07)">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                {# Brand column #}
+                <div>
+                    <h2 class="text-xl font-bold mb-3 text-white">{{ site_name }}</h2>
+                    <p class="text-sm" style="color:var(--theme-text-light)">
+                        {{ site_tagline|default:"The premier Python conference in Nigeria." }}
+                    </p>
+                </div>
 
-                        {# Footer links column #}
-                        <div>
-                            <h4 class="font-semibold mb-3 text-white">Links</h4>
-                            <ul class="space-y-2 text-sm">
-                                {% if footer_links %}
-                                    {% for link in footer_links %}
-                                        {% if link.block_type == 'link' %}
-                                        <li><a href="{{ link.value.url }}">{{ link.value.label }}</a></li>
-                                        {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    <li><a href="/privacy/">Privacy Policy</a></li>
-                                    <li><a href="/faqs/">FAQs</a></li>
-                                    <li><a href="/contact/">Contact</a></li>
-                                {% endif %}
-                            </ul>
-                        </div>
+                {% comment %}Footer links column. The hard-coded /privacy/, /faqs/
+                and /contact/ fallbacks are gone: none of those pages exist, so
+                they were three dead links on every page of the site.{% endcomment %}
+                {% if footer_links %}
+                <nav aria-label="Footer">
+                    <h2 class="font-semibold mb-3 text-white">Links</h2>
+                    <ul class="space-y-2 text-sm">
+                        {% for link in footer_links %}
+                            {% if link.block_type == 'link' %}
+                            <li><a href="{{ link.value.url }}">{{ link.value.label }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </nav>
+                {% endif %}
 
-                        {# Social media column #}
-                        <div>
-                            <h4 class="font-semibold mb-3 text-white">Follow Us</h4>
-                            <div class="flex flex-wrap gap-4">
-                                {% if twitter_url %}
-                                <a href="{{ twitter_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Twitter">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
-                                </a>
-                                {% endif %}
-                                {% if facebook_url %}
-                                <a href="{{ facebook_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Facebook">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-                                </a>
-                                {% endif %}
-                                {% if linkedin_url %}
-                                <a href="{{ linkedin_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="LinkedIn">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-                                </a>
-                                {% endif %}
-                                {% if instagram_url %}
-                                <a href="{{ instagram_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Instagram">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-                                </a>
-                                {% endif %}
-                                {% if youtube_url %}
-                                <a href="{{ youtube_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="YouTube">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
-                                </a>
-                                {% endif %}
-                                {% if github_url %}
-                                <a href="{{ github_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="GitHub">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    {# Copyright bar #}
-                    <div class="border-t border-white/10 pt-6 text-center text-sm" style="color:var(--theme-text-light)">
-                        {{ footer_copyright|default:"&copy; PyCon Nigeria. All rights reserved." }}
-                    </div>
+                {# Social media column #}
+                <div>
+                    <h2 class="font-semibold mb-3 text-white">Follow Us</h2>
+                    <ul class="flex flex-wrap gap-4 list-none p-0 m-0">
+                        {% comment %}Every icon is decorative: the accessible name is
+                        the link's aria-label, so the SVG must not be announced too.{% endcomment %}
+                        {% if twitter_url %}
+                        <li><a href="{{ twitter_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="PyCon Nigeria on Twitter">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+                        </a></li>
+                        {% endif %}
+                        {% if facebook_url %}
+                        <li><a href="{{ facebook_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="PyCon Nigeria on Facebook">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                        </a></li>
+                        {% endif %}
+                        {% if linkedin_url %}
+                        <li><a href="{{ linkedin_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="PyCon Nigeria on LinkedIn">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+                        </a></li>
+                        {% endif %}
+                        {% if instagram_url %}
+                        <li><a href="{{ instagram_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="PyCon Nigeria on Instagram">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                        </a></li>
+                        {% endif %}
+                        {% if youtube_url %}
+                        <li><a href="{{ youtube_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="PyCon Nigeria on YouTube">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
+                        </a></li>
+                        {% endif %}
+                        {% if github_url %}
+                        <li><a href="{{ github_url }}" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="PyCon Nigeria on GitHub">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+                        </a></li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
-        </footer>
 
-        <script type="importmap">
-        {
-            "imports": {
-                "alpinejs": "https://cdn.jsdelivr.net/npm/alpinejs@3/dist/module.esm.js"
-            }
-        }
-        </script>
-        <script type="module" src="{% static 'js/pyconng.js' %}"></script>
-        
-        {% comment %}Load theme-specific JS based on conference year{% endcomment %}
-        {% if conference_theme %}
-        <script src="{% static 'js/themes/theme_' %}{{ conference_theme }}.js" defer></script>
-        {% endif %}
-
-        {% block extra_js %}{% endblock %}
-    </body>
-</html>
+            {# Copyright bar #}
+            <div class="border-t border-white/10 pt-6 text-center text-sm" style="color:var(--theme-text-light)">
+                {{ footer_copyright|default:"&copy; PyCon Nigeria. All rights reserved." }}
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock %}

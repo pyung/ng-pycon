@@ -1,0 +1,20 @@
+{% extends "emails/_base.html" %}
+{% block title %}We have your report{% endblock %}
+{% block content %}
+  <p>Hi {{ name }},</p>
+  <p>
+    Thank you for telling us. Your report has reached the PyCon Nigeria
+    {{ conference_year }} Code of Conduct team, and only that team can read it.
+  </p>
+  <p style="font-size:18px;font-weight:600;margin:24px 0 8px;">{{ reference }}</p>
+  <p style="color:#6b7280;margin:0 0 24px;">Quote this if you want to add anything or ask where things stand.</p>
+  <p>
+    Someone will be in touch. We will not share your report, or your name, with
+    anyone outside the team without asking you first.
+  </p>
+  <p>
+    If you are in immediate danger or need help right now, find a member of the
+    team at the venue rather than waiting for a reply to this email.
+  </p>
+  <p>PyCon Nigeria Code of Conduct team</p>
+{% endblock %}

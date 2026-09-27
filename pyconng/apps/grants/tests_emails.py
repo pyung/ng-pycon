@@ -78,7 +78,16 @@ class GrantDecisionEmailTests(TestCase):
         self.assertEqual(msg.to, ["ada@example.com"])
         self.assertEqual(msg.tags, ["grants", "decision", "rejected"])
 
-    def test_bulk_decision_waitlist_sends_no_email(self):
+    def test_bulk_decision_waitlist_tells_the_applicant(self):
+        """
+        This test used to assert that a waitlisted applicant hears nothing, which
+        was the bug rather than the requirement: send_grant_decision returned
+        early for any status but approved or rejected, so someone waitlisted was
+        left waiting with no word at all. They get the waitlist email now.
+        """
         from grants.services import GrantService
         GrantService.bulk_decision([self.application.id], decision="waitlist")
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ["ada@example.com"])
+        self.assertEqual(msg.tags, ["grants", "decision", "waitlisted"])
