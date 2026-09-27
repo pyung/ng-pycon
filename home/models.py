@@ -393,6 +393,8 @@ class HomePage(Page):
         "home.HomePage",
         "meetups.MeetupIndexPage",
         "program.YearArchivePage",
+        "program.SchedulePage",
+        "program.SpeakersPage",
     ]  # Standard pages, sponsor page, meetups index, year archives, nested year homepages
 
     def get_default_child_class(self):
