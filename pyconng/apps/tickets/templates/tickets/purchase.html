@@ -52,21 +52,21 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                    <input type="text" x-model="firstName" 
+                    <label for="buyer-first-name" class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                    <input type="text" id="buyer-first-name" x-model="firstName" autocomplete="given-name"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                            placeholder="First name" value="{{ user_first_name }}">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                    <input type="text" x-model="lastName"
+                    <label for="buyer-last-name" class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                    <input type="text" id="buyer-last-name" x-model="lastName" autocomplete="family-name"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                            placeholder="Last name" value="{{ user_last_name }}">
                 </div>
             </div>
             <div class="mb-8">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input type="email" x-model="email" readonly
+                <label for="buyer-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" id="buyer-email" x-model="email" readonly autocomplete="email"
                        class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
                        value="{{ user_email }}">
                 <p class="text-xs text-gray-400 mt-1">This is your account email and cannot be changed here.</p>
@@ -97,14 +97,33 @@
                             {% endif %}
                         </div>
                         <div class="w-24">
+                            {% comment %}Only the quantities that can actually be
+                            bought. The old fixed 0-9 list let somebody pick ten of
+                            something with three left, and find out at the checkout.{% endcomment %}
+                            <label class="sr-only" for="qty-{{ ticket.short_name|slugify }}">
+                                Number of {{ ticket.short_name }} tickets
+                            </label>
                             <select @change="calculateTotal()"
+                                    id="qty-{{ ticket.short_name|slugify }}"
                                     x-model="quantities['{{ ticket.short_name }}']"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 text-center">
-                                {% for i in "0123456789" %}
-                                <option value="{{ forloop.counter0 }}">{{ forloop.counter0 }}</option>
+                                {% for option in ticket.quantity_options %}
+                                <option value="{{ option }}">{{ option }}</option>
                                 {% endfor %}
                             </select>
+                            <p class="mt-1 text-xs text-gray-400 text-center">
+                                Max {{ ticket.max_per_order }} per order
+                            </p>
                         </div>
+                    </div>
+                    {% empty %}
+                    {% comment %}Nothing on sale. The selection used to render empty,
+                    which reads as a broken page rather than a closed window.{% endcomment %}
+                    <div class="p-6 text-center">
+                        <p class="font-semibold text-gray-700">No tickets are on sale right now.</p>
+                        <p class="mt-1 text-sm text-gray-500">
+                            <a href="{% url 'tickets:home' %}" class="text-teal-700 hover:underline">See what is coming</a>{% if waitlist_enabled %}, and join the waiting list there{% endif %}.
+                        </p>
                     </div>
                     {% endfor %}
                 </div>
@@ -112,16 +131,16 @@
 
             <!-- Coupon Section -->
             <div class="bg-white rounded-2xl shadow-lg p-8">
-                <div x-show="!showCouponInput && discount === 0">
+                <div x-show="!showCouponInput && !hasDiscount">
                     <button @click="showCouponInput = true" class="text-teal-600 hover:text-teal-700 text-sm font-medium underline">
                         Have a discount code?
                     </button>
                 </div>
                 
-                <div x-show="showCouponInput && discount === 0" x-transition class="flex items-end gap-4">
+                <div x-show="showCouponInput && !hasDiscount" x-transition class="flex items-end gap-4">
                     <div class="flex-grow">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Coupon Code</label>
-                        <input type="text" x-model="couponCode"
+                        <label for="coupon-code" class="block text-sm font-medium text-gray-700 mb-2">Coupon Code</label>
+                        <input type="text" id="coupon-code" x-model="couponCode"
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                                placeholder="Enter coupon code">
                     </div>
@@ -131,15 +150,83 @@
                     </button>
                 </div>
 
-                <div x-show="discount > 0" x-transition class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div x-show="hasDiscount" x-transition class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div>
                         <span class="text-green-700 font-medium">Discount applied!</span>
-                        <span class="text-green-600 font-bold ml-2" x-text="discount + '% off'"></span>
+                        <span class="text-green-600 font-bold ml-2" x-text="discountLabel"></span>
                     </div>
                     <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                     </svg>
                 </div>
+            </div>
+
+            {% if needs_verification %}
+            {% comment %}Asked for before payment, not after. A concession rate that
+            is checked afterwards means either refunding people or waving through
+            everyone who claimed it.{% endcomment %}
+            <div x-show="verifiedTypeSelected" x-transition class="bg-white rounded-2xl shadow-lg p-8">
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Confirm your eligibility</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    {% for row in needs_verification %}
+                    <span class="block">{{ row.name }}: {{ row.verification_prompt }}</span>
+                    {% endfor %}
+                </p>
+                <label for="verification-reference" class="block text-sm font-medium text-gray-700 mb-2">
+                    Your details
+                </label>
+                <input type="text" id="verification-reference" x-model="verificationReference"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                       placeholder="Institution and ID number">
+                <p class="mt-2 text-xs text-gray-500">
+                    An organizer checks this. We will be in touch if anything is unclear
+                    &mdash; your ticket is valid meanwhile.
+                </p>
+            </div>
+            {% endif %}
+
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" x-model="buyingForCompany"
+                           class="w-5 h-5 mt-0.5 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+                    <span>
+                        <span class="font-medium text-gray-900">This is a company purchase</span>
+                        <span class="block text-sm text-gray-500">
+                            We will put your company's name and address on the invoice.
+                            You can also add these afterwards.
+                        </span>
+                    </span>
+                </label>
+
+                <div x-show="buyingForCompany" x-transition class="mt-5 space-y-4">
+                    <div>
+                        <label for="company-name" class="block text-sm font-medium text-gray-700 mb-1">Company name</label>
+                        <input type="text" id="company-name" x-model="companyName"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="company-address" class="block text-sm font-medium text-gray-700 mb-1">Company address</label>
+                        <textarea id="company-address" rows="3" x-model="companyAddress"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="buyer-tax-id" class="block text-sm font-medium text-gray-700 mb-1">Tax identification number</label>
+                            <input type="text" id="buyer-tax-id" x-model="buyerTaxId"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="po-reference" class="block text-sm font-medium text-gray-700 mb-1">Purchase order reference</label>
+                            <input type="text" id="po-reference" x-model="purchaseOrderReference"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="errorMessage" x-transition role="alert"
+                 class="p-4 bg-red-50 text-red-800 border border-red-200 rounded-lg">
+                <p x-text="errorMessage"></p>
             </div>
 
             <!-- Order Summary -->
@@ -151,10 +238,10 @@
                         <span>Tickets</span>
                         <span x-text="ticketCount + ' ticket(s)'">0 ticket(s)</span>
                     </div>
-                    <template x-if="discount > 0">
+                    <template x-if="hasDiscount">
                         <div class="flex justify-between text-green-600">
                             <span>Discount</span>
-                            <span x-text="'-' + discount + '%'"></span>
+                            <span x-text="'-' + discountLabel"></span>
                         </div>
                     </template>
                     <div class="border-t border-gray-200 pt-3">
@@ -239,15 +326,42 @@ function purchaseApp() {
         pricings: {{ pricings_json|safe }},
         couponCode: '',
         discount: 0,
+        discountKind: '',
+        discountAmount: 0,
+        discountLabel: '',
         showCouponInput: false,
+        verificationReference: '',
+        buyingForCompany: false,
+        companyName: '',
+        companyAddress: '',
+        buyerTaxId: '',
+        purchaseOrderReference: '',
+        errorMessage: '',
         cocAccepted: false,
         total: 0,
         ticketCount: 0,
         processing: false,
         showError: false,
 
+        get hasDiscount() {
+            return this.discount > 0 || this.discountAmount > 0;
+        },
+
+        get needsVerification() {
+            return {{ needs_verification|length }} > 0 && this.verifiedTypeSelected;
+        },
+
+        get verifiedTypeSelected() {
+            const verified = {{ needs_verification_names|safe }};
+            return verified.some((name) => (parseInt(this.quantities[name]) || 0) > 0);
+        },
+
         get canPay() {
-            return this.total > 0 && this.cocAccepted && !this.processing;
+            if (this.total <= 0 || !this.cocAccepted || this.processing) return false;
+            // A concession rate has to be checked, so the field it asks for is
+            // required before the buyer reaches Paystack rather than after.
+            if (this.verifiedTypeSelected && !this.verificationReference.trim()) return false;
+            return true;
         },
 
         toStep2() {
@@ -268,8 +382,13 @@ function purchaseApp() {
                 subtotal += price * q;
                 count += q;
             }
-            const discountAmount = subtotal * this.discount / 100;
-            this.total = subtotal - discountAmount;
+            let taken = 0;
+            if (this.discountKind === 'fixed') {
+                taken = Math.min(this.discountAmount, subtotal);
+            } else {
+                taken = subtotal * this.discount / 100;
+            }
+            this.total = Math.max(subtotal - taken, 0);
             this.ticketCount = count;
         },
 
@@ -278,16 +397,30 @@ function purchaseApp() {
             try {
                 const resp = await fetch(`{% url 'tickets:coupons' %}?value=${encodeURIComponent(this.couponCode)}`);
                 const data = await resp.json();
-                if (data.status > 0) {
-                    this.discount = data.status;
+                if (data.status > 0 || (data.kind === 'fixed' && data.amount > 0)) {
+                    this.discount = data.status || 0;
+                    this.discountKind = data.kind || 'percentage';
+                    this.discountAmount = data.amount || 0;
+                    this.discountLabel = data.label || (this.discount + '% off');
+                    this.errorMessage = '';
                     this.calculateTotal();
                 } else {
-                    alert('Invalid or expired coupon code.');
+                    this.errorMessage = data.message || 'That coupon code is not valid.';
                     this.showCouponInput = false;
                 }
             } catch (e) {
                 console.error('Coupon validation error:', e);
             }
+        },
+
+        readableError(error) {
+            if (typeof error === 'string') return error;
+            const messages = [];
+            for (const value of Object.values(error || {})) {
+                if (Array.isArray(value)) messages.push(...value);
+                else if (value) messages.push(String(value));
+            }
+            return messages.join(' ') || 'Something went wrong. Please try again.';
         },
 
         async payWithPaystack() {
@@ -302,12 +435,19 @@ function purchaseApp() {
                     body: JSON.stringify({
                         coupon: this.couponCode,
                         tickets: this.quantities,
+                        verification_reference: this.verificationReference,
+                        company_name: this.buyingForCompany ? this.companyName : '',
+                        company_address: this.buyingForCompany ? this.companyAddress : '',
+                        buyer_tax_id: this.buyingForCompany ? this.buyerTaxId : '',
+                        purchase_order_reference: this.buyingForCompany ? this.purchaseOrderReference : '',
                     }),
                 });
                 const orderData = await orderResp.json();
 
                 if (orderData.error) {
-                    alert('Error: ' + JSON.stringify(orderData.error));
+                    // Show what is actually wrong. A stringified error object told
+                    // buyers nothing and sent them to support.
+                    this.errorMessage = this.readableError(orderData.error);
                     this.processing = false;
                     return;
                 }

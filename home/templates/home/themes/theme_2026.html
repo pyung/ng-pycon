@@ -236,7 +236,7 @@ undraw SVG illustrations.  All 12 editable sections rendered.
                 {% endif %}
                 <h3 class="text-xl font-bold mb-2" style="color:var(--theme-text)">{{ ticket.name }}</h3>
                 <div class="ticket-price">
-                    {% if ticket.current_price == 0 %}Free{% else %}&#8358;{{ ticket.current_price|floatformat:0 }}{% endif %}
+                    {% if ticket.current_price == 0 %}Free{% else %}&#8358;{{ ticket.current_price|floatformat:0 }}{% endif %}{% if ticket.state_label %}<span class="block text-sm font-normal opacity-75">{{ ticket.state_label }}</span>{% endif %}
                     {% if ticket.is_early_bird %}
                     <span class="text-sm font-normal text-green-600 ml-1">(Early Bird)</span>
                     {% endif %}

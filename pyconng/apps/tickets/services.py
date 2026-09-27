@@ -91,6 +91,42 @@ class PaystackService:
             logger.error("Paystack API error during initialization: %s", e)
             return None
 
+    def refund_transaction(self, reference, amount=None):
+        """
+        Ask Paystack to reverse a charge.
+
+        ``amount`` is in naira and may be less than the original, for a partial
+        refund; omitting it refunds the whole charge. Returns a dict with
+        ``reference`` on success and None otherwise, matching the other methods
+        here -- the caller records nothing until it has a reference, because a
+        record saying the money went back when it did not is worse than no record.
+        """
+        url = f"{self.base_url}/refund"
+        payload = {"transaction": reference}
+        if amount is not None:
+            payload["amount"] = int(float(amount) * 100)  # naira to kobo
+
+        try:
+            response = requests.post(url, json=payload, headers=self.headers, timeout=30)
+            data = response.json()
+
+            if data.get("status"):
+                refund = data.get("data", {})
+                return {
+                    "reference": str(
+                        refund.get("id") or refund.get("transaction", {}).get("reference") or reference
+                    ),
+                    "status": refund.get("status", ""),
+                    "amount": (refund.get("amount") or 0) / 100,
+                }
+
+            logger.warning("Paystack refund refused for %s: %s", reference, data)
+            return None
+
+        except requests.RequestException as exc:
+            logger.error("Paystack API error refunding %s: %s", reference, exc)
+            return None
+
     @staticmethod
     def verify_webhook_signature(request):
         """

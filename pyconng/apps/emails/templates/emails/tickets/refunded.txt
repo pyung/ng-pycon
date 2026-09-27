@@ -1,0 +1,14 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ user_name }},
+
+We have refunded {{ amount }} against your PyCon Nigeria {{ conference_year }}
+order {{ order_code }}.
+{% if reference %}
+Reference: {{ reference }}
+{% endif %}
+How long it takes to appear depends on your bank rather than on us - usually a
+few working days. If it has not arrived within ten, reply to this email with the
+reference above and we will chase it.
+
+We hope to see you another year,
+PyCon Nigeria Team
+{% endblock %}

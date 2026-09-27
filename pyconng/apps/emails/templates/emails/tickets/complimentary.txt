@@ -1,0 +1,15 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ user_name }},
+
+You have a ticket for PyCon Nigeria {{ conference_year }}, issued as a
+{{ reason }}. There is nothing to pay and nothing to do.
+
+Your order reference: {{ order_code }}
+
+Open your ticket: {{ ticket_url }}
+
+Your ticket carries a QR code for the door. Bring it on your phone or print it -
+either works, and a volunteer can type the code if a scanner will not cooperate.
+
+See you there,
+PyCon Nigeria Team
+{% endblock %}

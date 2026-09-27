@@ -1,0 +1,13 @@
+{% extends "emails/_base.txt" %}{% block content %}Hello,
+
+A {{ ticket_type }} ticket for PyCon Nigeria {{ conference_year }} has become
+available, and you asked to be told.
+
+Buy your ticket: {{ purchase_url }}
+{% if first_come %}
+This is not a reservation. Everyone at the front of the waiting list was told at
+the same time, so the ticket goes to whoever completes the purchase first. We
+would not want you to find that out at the checkout.
+{% endif %}
+PyCon Nigeria Team
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends base_template %}
+{% load humanize %}
+
+{% block title %}Invoice {{ invoice.number }}{% endblock %}
+{% block body_class %}template-invoice{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Print rules, because "save as PDF" in a browser is the PDF. Adding a
+     rendering library to the image for one page would be a poor trade for a team
+     that finds deploying expensive. */
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; }
+    .invoice-sheet {
+      box-shadow: none !important;
+      border: 0 !important;
+      margin: 0 !important;
+      max-width: none !important;
+      padding: 0 !important;
+    }
+    a[href]::after { content: ""; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 py-10">
+        <div class="max-w-3xl mx-auto">
+
+            <div class="no-print flex flex-wrap items-center justify-between gap-3">
+                <a href="{% url 'tickets:detail' order=ticket.pk %}" class="text-sm text-teal-700 hover:underline">
+                    &larr; Back to your ticket
+                </a>
+                <button type="button" onclick="window.print()"
+                        class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-lg">
+                    Print or save as PDF
+                </button>
+            </div>
+
+            <article class="invoice-sheet mt-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-8 md:p-10">
+                <header class="flex flex-wrap justify-between gap-6 pb-6 border-b border-gray-200">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Invoice</h1>
+                        <p class="mt-1 font-mono text-lg text-gray-900">{{ invoice.number }}</p>
+                        <p class="text-sm text-gray-500">
+                            Issued {{ invoice.issued_at|date:"j F Y" }}
+                        </p>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p class="font-semibold text-gray-900">
+                            {{ seller.invoice_from_name|default:"PyCon Nigeria" }}
+                        </p>
+                        {% if seller.invoice_from_address %}
+                        <p class="whitespace-pre-line">{{ seller.invoice_from_address }}</p>
+                        {% endif %}
+                        {% if seller.invoice_tax_id %}
+                        <p>Tax ID: {{ seller.invoice_tax_id }}</p>
+                        {% endif %}
+                    </div>
+                </header>
+
+                <div class="grid sm:grid-cols-2 gap-6 py-6 border-b border-gray-200">
+                    <div>
+                        <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Billed to</h2>
+                        <p class="mt-1 font-semibold text-gray-900">{{ invoice.addressee }}</p>
+                        {% if invoice.company_name and invoice.buyer_name %}
+                        <p class="text-sm text-gray-600">Attn: {{ invoice.buyer_name }}</p>
+                        {% endif %}
+                        {% if invoice.company_address %}
+                        <p class="text-sm text-gray-600 whitespace-pre-line">{{ invoice.company_address }}</p>
+                        {% endif %}
+                        <p class="text-sm text-gray-600">{{ invoice.buyer_email }}</p>
+                        {% if invoice.buyer_tax_id %}
+                        <p class="text-sm text-gray-600">Tax ID: {{ invoice.buyer_tax_id }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Order</h2>
+                        <p class="mt-1 font-mono text-gray-900">{{ ticket.order }}</p>
+                        <p class="text-sm text-gray-600">
+                            PyCon Nigeria {{ invoice.conference_year }}
+                        </p>
+                        {% if invoice.purchase_order_reference %}
+                        <p class="text-sm text-gray-600">
+                            PO: {{ invoice.purchase_order_reference }}
+                        </p>
+                        {% endif %}
+                        <p class="mt-2 text-sm font-semibold {% if invoice.is_paid %}text-green-700{% else %}text-amber-700{% endif %}">
+                            {% if invoice.is_paid %}Paid{% else %}Unpaid{% endif %}
+                            {% if ticket.date_paid %} &middot; {{ ticket.date_paid|date:"j F Y" }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="py-6 overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <caption class="sr-only">Items on this invoice</caption>
+                        <thead>
+                            <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+                                <th scope="col" class="pb-2">Item</th>
+                                <th scope="col" class="pb-2 text-right">Quantity</th>
+                                <th scope="col" class="pb-2 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-t border-gray-100">
+                                <th scope="row" class="py-3 font-medium text-gray-900 text-left">
+                                    {{ ticket.ticket_type.name|default:"Ticket" }}
+                                    <span class="block text-xs font-normal text-gray-500">
+                                        PyCon Nigeria {{ invoice.conference_year }} admission
+                                    </span>
+                                </th>
+                                <td class="py-3 text-right text-gray-700">{{ ticket.quantity }}</td>
+                                <td class="py-3 text-right text-gray-900">
+                                    {{ invoice.currency }} {{ invoice.subtotal|floatformat:2|intcomma }}
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            {% if invoice.discount %}
+                            <tr class="border-t border-gray-100">
+                                <th scope="row" colspan="2" class="py-2 text-right font-normal text-gray-600">
+                                    Discount{% if ticket.coupon %} ({{ ticket.coupon.code }}){% endif %}
+                                </th>
+                                <td class="py-2 text-right text-gray-700">
+                                    &minus;{{ invoice.currency }} {{ invoice.discount|floatformat:2|intcomma }}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr class="border-t-2 border-gray-300">
+                                <th scope="row" colspan="2" class="py-3 text-right font-bold text-gray-900">Total</th>
+                                <td class="py-3 text-right font-bold text-gray-900">
+                                    {{ invoice.currency }} {{ invoice.total|floatformat:2|intcomma }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                {% if places %}
+                <div class="pt-2 pb-6 border-t border-gray-100">
+                    <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Attendees</h2>
+                    <ul class="mt-2 text-sm text-gray-700 list-none p-0 m-0">
+                        {% for place in places %}
+                        <li>{{ place.full_name }}{% if place.attendee_email %} &middot; {{ place.attendee_email }}{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if invoice.notes %}
+                <footer class="pt-4 border-t border-gray-100 text-sm text-gray-600 whitespace-pre-line">
+                    {{ invoice.notes }}
+                </footer>
+                {% endif %}
+            </article>
+
+            {% comment %}Editable after the fact, because buyers routinely discover a
+            fortnight later that their finance team needs a company name on it.{% endcomment %}
+            <div class="no-print mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <h2 class="text-lg font-bold text-gray-900">Billing details</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Need this invoice in a company's name? Fill these in and it is
+                    reissued with the same number.
+                </p>
+                <form method="post" class="pycon-form mt-4 space-y-4">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit"
+                            class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                        Save details
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </section>
+</div>
+{% endblock %}

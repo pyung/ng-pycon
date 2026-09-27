@@ -1,0 +1,20 @@
+{% extends "emails/_base.html" %}
+{% block title %}A ticket is available{% endblock %}
+{% block content %}
+  <p>Hello,</p>
+  <p>
+    A <strong>{{ ticket_type }}</strong> ticket for PyCon Nigeria
+    {{ conference_year }} has become available, and you asked to be told.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ purchase_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Buy your ticket</a>
+  </p>
+  {% if first_come %}
+  <p style="font-size:14px;color:#6b7280;">
+    This is not a reservation. Everyone at the front of the waiting list was told
+    at the same time, so the ticket goes to whoever completes the purchase first.
+    We would not want you to find that out at the checkout.
+  </p>
+  {% endif %}
+  <p>PyCon Nigeria Team</p>
+{% endblock %}

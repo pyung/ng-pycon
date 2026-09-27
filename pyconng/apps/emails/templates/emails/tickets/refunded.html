@@ -1,0 +1,18 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your refund{% endblock %}
+{% block content %}
+  <p>Hi {{ user_name }},</p>
+  <p>
+    We have refunded <strong>{{ amount }}</strong> against your PyCon Nigeria
+    {{ conference_year }} order <strong>{{ order_code }}</strong>.
+  </p>
+  {% if reference %}
+  <p style="color:#6b7280;">Reference: {{ reference }}</p>
+  {% endif %}
+  <p>
+    How long it takes to appear depends on your bank rather than on us &mdash;
+    usually a few working days. If it has not arrived within ten, reply to this
+    email with the reference above and we will chase it.
+  </p>
+  <p>We hope to see you another year,<br>PyCon Nigeria Team</p>
+{% endblock %}

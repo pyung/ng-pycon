@@ -568,13 +568,23 @@ class HomePage(Page):
         return sponsors_by_tier(self.conference_year or current_year())
 
     def get_ticket_types(self):
-        """Fetch ticket types from the tickets app for this page's conference year."""
+        """
+        Ticket types for this page's edition, with why each can or cannot be bought.
+
+        The same wording as the ticket page uses, so the two agree: a card that
+        simply shows a price with no "Sold out" beside it sends people to a
+        purchase page that will refuse them.
+        """
         from editions.current import current_year
         from tickets.models import TicketType
 
         year = self.conference_year or current_year()
+        # purchasable() matters: invitation-only types exist to be issued -- a
+        # speaker's comp, a sponsor's allocation -- and are priced at nothing, so
+        # without it the homepage advertises a free ticket nobody can buy.
         ticket_types = (
             TicketType.objects.active()
+            .purchasable()
             .for_year(year)
             .order_by("display_order", "price")
         )
@@ -586,8 +596,14 @@ class HomePage(Page):
                 "price": tt.price,
                 "early_bird_price": tt.early_bird_price,
                 "is_early_bird": tt.early_bird_remaining,
+                "early_bird_ends_at": tt.early_bird_ends_at,
                 "remaining": tt.remaining_count,
                 "is_sold_out": tt.is_sold_out,
+                "sale_state": tt.sale_state,
+                # Read off the model, so the homepage and the ticket page cannot
+                # drift apart about what "sold out" is called.
+                "state_label": tt.state_label,
+                "is_on_sale": tt.is_on_sale,
             }
             for tt in ticket_types
         ]

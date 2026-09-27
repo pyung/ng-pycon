@@ -37,6 +37,17 @@ urlpatterns = [
         views.SalesTicketView.as_view(),
         name="sales",
     ),
+    # Invoices and refunds
+    path("invoice/<str:order>/", views.invoice_view, name="invoice"),
+    path("refund/<str:order>/", views.refund_request, name="refund_request"),
+
+    # Waitlist
+    path("waitlist/", views.waitlist_join, name="waitlist_join"),
+
+    # Check-in. Short path because it is what a QR code carries and what somebody
+    # may have to read off a badge and type.
+    path("c/<str:code>/", views.checkin, name="checkin"),
+
     # Paystack integration
     path(
         "paystack/validate/<str:order>/<str:code>/",

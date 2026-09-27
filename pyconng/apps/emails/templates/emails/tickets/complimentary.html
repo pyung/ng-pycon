@@ -1,0 +1,20 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your PyCon Nigeria ticket{% endblock %}
+{% block content %}
+  <p>Hi {{ user_name }},</p>
+  <p>
+    You have a ticket for PyCon Nigeria {{ conference_year }}, issued as a
+    <strong>{{ reason }}</strong>. There is nothing to pay and nothing to do.
+  </p>
+  <p style="font-size:18px;font-weight:600;margin:24px 0 8px;">{{ order_code }}</p>
+  <p style="color:#6b7280;margin:0 0 24px;">Your order reference.</p>
+  <p style="margin:24px 0;">
+    <a href="{{ ticket_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Open your ticket</a>
+  </p>
+  <p>
+    Your ticket carries a QR code for the door. Bring it on your phone or print it
+    &mdash; either works, and a volunteer can type the code if a scanner will not
+    cooperate.
+  </p>
+  <p>See you there,<br>PyCon Nigeria Team</p>
+{% endblock %}

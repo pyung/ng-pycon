@@ -31,7 +31,7 @@
         <div class="bg-white rounded-2xl shadow-lg p-8">
             <div class="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
                 <p class="text-teal-800 text-sm">
-                    <strong>Note:</strong> These details will be applied to all {{ object.quantity }} ticket{{ object.quantity|pluralize }} in this order. You can edit individual tickets afterwards.
+                    <strong>Note:</strong> These details will be applied to all {{ object.quantity }} ticket{{ object.quantity|pluralize }} in this order. You can edit each one afterwards &mdash; including giving each place its own attendee and email.
                 </p>
             </div>
 
@@ -43,6 +43,20 @@
                     {{ ticket_form.full_name }}
                     {% if ticket_form.full_name.errors %}
                     <p class="text-red-500 text-sm mt-1">{{ ticket_form.full_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                {% comment %}The field that makes a group purchase work. Without it
+                every place in the order was saved against the buyer, so the
+                colleagues they paid for never saw a ticket.{% endcomment %}
+                <div>
+                    <label for="id_attendee_email" class="block text-sm font-medium text-gray-700 mb-2">
+                        Attendee Email
+                    </label>
+                    {{ ticket_form.attendee_email }}
+                    <p class="text-xs text-gray-400 mt-1">{{ ticket_form.attendee_email.help_text }}</p>
+                    {% if ticket_form.attendee_email.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ ticket_form.attendee_email.errors.0 }}</p>
                     {% endif %}
                 </div>
 

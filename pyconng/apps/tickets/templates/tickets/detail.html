@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Ticket Details{% endblock %}
 
@@ -23,10 +23,18 @@
                     {% endif %}
                 </p>
             </div>
-            <a href="{% url 'tickets:home' %}" 
-               class="px-4 py-2 text-sm border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
-                Back to Tickets
-            </a>
+            <div class="flex flex-wrap gap-2">
+                {% if is_buyer and object.status == 2 %}
+                <a href="{% url 'tickets:invoice' order=object.pk %}"
+                   class="px-4 py-2 text-sm border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
+                    Invoice{% if invoice %} {{ invoice.number }}{% endif %}
+                </a>
+                {% endif %}
+                <a href="{% url 'tickets:home' %}"
+                   class="px-4 py-2 text-sm border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
+                    Back to Tickets
+                </a>
+            </div>
         </div>
 
         <!-- Messages -->
@@ -48,7 +56,7 @@
                 <div class="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4 flex items-center justify-between">
                     <div class="text-white">
                         <span class="text-sm opacity-80">Ticket #{{ item.ticket.ticket_id_display }}</span>
-                        <h3 class="font-bold text-lg">{{ item.ticket.ticket_type_name }}</h3>
+                        <h2 class="font-bold text-lg">{{ item.ticket.ticket_type_name }}</h2>
                     </div>
                     <div class="bg-white bg-opacity-20 rounded-full px-3 py-1">
                         <span class="text-white text-sm font-medium">PyCon NG</span>
@@ -57,30 +65,71 @@
 
                 <!-- Ticket Details (View Mode) -->
                 <div x-show="!editing && !transferring" class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <span class="text-xs text-gray-400 uppercase tracking-wider">Attendee Name</span>
-                            <p class="font-semibold text-gray-900 mt-1">{{ item.ticket.full_name }}</p>
+                    <div class="flex flex-col sm:flex-row gap-6">
+                        <div class="grow grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <span class="text-xs text-gray-400 uppercase tracking-wider">Attendee Name</span>
+                                <p class="font-semibold text-gray-900 mt-1">{{ item.ticket.full_name }}</p>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-400 uppercase tracking-wider">Attendee Email</span>
+                                <p class="font-semibold text-gray-900 mt-1 break-words">
+                                    {{ item.ticket.owner_email|default:"Not set" }}
+                                    {% if item.ticket.attendee_email and not item.ticket.user %}
+                                    <span class="block text-xs font-normal text-amber-700">
+                                        Waiting for them to sign up &mdash; the ticket appears in their
+                                        account automatically.
+                                    </span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-400 uppercase tracking-wider">Dietary Preference</span>
+                                <p class="font-semibold text-gray-900 mt-1">{{ item.ticket.diet }}</p>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-400 uppercase tracking-wider">Tagline</span>
+                                <p class="font-semibold text-gray-900 mt-1">{{ item.ticket.tagline|default:"Not set" }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <span class="text-xs text-gray-400 uppercase tracking-wider">Dietary Preference</span>
-                            <p class="font-semibold text-gray-900 mt-1">{{ item.ticket.diet }}</p>
-                        </div>
-                        <div>
-                            <span class="text-xs text-gray-400 uppercase tracking-wider">Tagline</span>
-                            <p class="font-semibold text-gray-900 mt-1">{{ item.ticket.tagline|default:"Not set" }}</p>
+
+                        {% comment %}The QR, with the code written under it. The code is
+                        the fallback that matters: a scanner will fail at least once at
+                        the door, and a volunteer can type ten characters.{% endcomment %}
+                        <div class="shrink-0 text-center">
+                            {% if item.qr_svg %}
+                            <div class="inline-block bg-white p-1 rounded-lg border border-gray-200">
+                                {{ item.qr_svg|safe }}
+                            </div>
+                            {% endif %}
+                            <p class="mt-2 font-mono text-sm font-semibold tracking-wider text-gray-900">
+                                {{ item.ticket.checkin_code }}
+                            </p>
+                            {% if item.ticket.is_checked_in %}
+                            <p class="mt-1 text-xs font-semibold text-green-700">
+                                Checked in {{ item.ticket.checked_in_at|date:"j M, H:i" }}
+                            </p>
+                            {% else %}
+                            <p class="mt-1 text-xs text-gray-500">Show this at the door</p>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <div class="flex gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <div class="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-100">
                         <button @click="editing = true"
                                 class="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
                             Edit Details
                         </button>
+                        {% if transfers_open %}
                         <button @click="transferring = true"
                                 class="px-4 py-2 text-sm bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg transition-colors">
                             Transfer Ticket
                         </button>
+                        {% else %}
+                        <p class="px-4 py-2 text-sm text-gray-500">
+                            Transfers closed{% if transfer_deadline %} on {{ transfer_deadline|date:"j F Y" }}{% endif %}
+                        </p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -91,15 +140,20 @@
                         {% csrf_token %}
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <label for="{{ item.form.full_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                             {{ item.form.full_name }}
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Dietary Preference</label>
+                            <label for="{{ item.form.attendee_email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Attendee Email</label>
+                            {{ item.form.attendee_email }}
+                            <p class="mt-1 text-xs text-gray-500">{{ item.form.attendee_email.help_text }}</p>
+                        </div>
+                        <div>
+                            <label for="{{ item.form.diet.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Dietary Preference</label>
                             {{ item.form.diet }}
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+                            <label for="{{ item.form.tagline.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
                             {{ item.form.tagline }}
                         </div>
 
@@ -117,17 +171,22 @@
                 </div>
 
                 <!-- Transfer Mode -->
+                {% comment %}Not rendered at all once the window is shut, rather than
+                hidden: a form that cannot succeed should not be in the page.{% endcomment %}
+                {% if transfers_open %}
                 <div x-show="transferring" x-transition class="p-6">
                     <h4 class="font-semibold text-gray-900 mb-2">Transfer Ticket</h4>
                     <p class="text-sm text-gray-500 mb-4">
-                        Enter the email address of the person you want to transfer this ticket to. They must already have an account.
+                        Enter the email address of the person you want to transfer this
+                        ticket to. They do not need an account yet &mdash; the ticket
+                        appears in theirs when they make one.
                     </p>
                     <form action="{% url 'tickets:sales' pk=item.ticket.pk %}?transfer=1" method="post" class="space-y-4">
                         {% csrf_token %}
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Email</label>
-                            {{ transfer_form.email }}
+                            <label for="{{ item.transfer_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Recipient Email</label>
+                            {{ item.transfer_form.email }}
                         </div>
 
                         <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -148,6 +207,7 @@
                         </div>
                     </form>
                 </div>
+                {% endif %}
             </div>
             {% empty %}
             <div class="bg-white rounded-2xl shadow-lg p-12 text-center">
@@ -155,6 +215,38 @@
             </div>
             {% endfor %}
         </div>
+
+        {% if is_buyer %}
+        <div class="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 class="text-lg font-bold text-gray-900">Refunds</h2>
+            {% if refund_policy %}
+            <p class="mt-2 text-sm text-gray-600 whitespace-pre-line">{{ refund_policy }}</p>
+            {% endif %}
+
+            {% if refunds %}
+            <ul class="mt-4 space-y-2 list-none p-0">
+                {% for refund in refunds %}
+                <li class="text-sm text-gray-700">
+                    &#8358;{{ refund.amount|floatformat:0|intcomma }} &middot;
+                    <span class="font-medium">{{ refund.get_status_display }}</span>
+                    &middot; requested {{ refund.requested_at|date:"j M Y" }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            <div class="mt-4">
+                {% if can_request_refund %}
+                <a href="{% url 'tickets:refund_request' order=object.pk %}"
+                   class="inline-block px-4 py-2 text-sm border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
+                    Request a refund
+                </a>
+                {% elif refund_message %}
+                <p class="text-sm text-gray-500">{{ refund_message }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

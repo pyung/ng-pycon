@@ -271,7 +271,7 @@
             <div class="theme-card text-center">
                 <h3 class="theme-heading text-2xl mb-4">{{ ticket.name }}</h3>
                 <div class="text-4xl font-bold text-theme-primary mb-4">
-                    {% if ticket.current_price == 0 %}Free{% else %}&#8358;{{ ticket.current_price|floatformat:0 }}{% endif %}
+                    {% if ticket.current_price == 0 %}Free{% else %}&#8358;{{ ticket.current_price|floatformat:0 }}{% endif %}{% if ticket.state_label %}<span class="block text-sm font-normal opacity-75">{{ ticket.state_label }}</span>{% endif %}
                     {% if ticket.is_early_bird %}
                     <span class="text-sm font-normal text-green-600 ml-1">(Early Bird)</span>
                     {% endif %}

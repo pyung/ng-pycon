@@ -28,6 +28,13 @@
                         <span class="text-gray-500">Order ID</span>
                         <span class="font-mono font-semibold text-gray-900">{{ ticket.order }}</span>
                     </div>
+                    {% if invoice %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Invoice</span>
+                        <a href="{% url 'tickets:invoice' order=ticket.pk %}"
+                           class="font-mono font-semibold text-teal-700 hover:underline">{{ invoice.number }}</a>
+                    </div>
+                    {% endif %}
                     {% if ticket.ticket_type %}
                     <div class="flex justify-between">
                         <span class="text-gray-500">Ticket Type</span>

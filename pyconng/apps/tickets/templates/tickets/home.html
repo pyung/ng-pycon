@@ -18,6 +18,21 @@
         </div>
     </section>
 
+    {% comment %}This page had no messages block at all, so joining the waiting list
+    below redirected here and said nothing whatever.{% endcomment %}
+    {% if messages %}
+    <div class="max-w-2xl mx-auto px-4 pb-6">
+        {% for message in messages %}
+        <div role="status" class="p-4 rounded-lg mb-2 text-sm
+            {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200
+            {% elif message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200
+            {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Ticket Cards -->
     <section class="pb-20 px-4">
         <div class="max-w-6xl mx-auto">
@@ -27,7 +42,7 @@
                 <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100 flex flex-col">
                     <!-- Card Header -->
                     <div class="p-8 text-center border-b border-gray-100">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ ticket.name }}</h3>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ ticket.name }}</h2>
                         <p class="text-gray-500 text-sm mb-6">{{ ticket.description }}</p>
                         
                         <div class="mb-2">
@@ -51,24 +66,45 @@
 
                     <!-- Card Body -->
                     <div class="p-8 flex-grow">
-                        {% if ticket.remaining > 0 %}
+                        {% if ticket.remaining > 0 and ticket.is_on_sale %}
                         <p class="text-sm text-gray-500 text-center">
                             <span class="font-semibold text-gray-700">{{ ticket.remaining }}</span> tickets remaining
                         </p>
                         {% endif %}
+                        {% if ticket.is_early_bird and ticket.early_bird_ends_at %}
+                        <p class="mt-2 text-sm text-center text-green-700">
+                            Early bird until {{ ticket.early_bird_ends_at|date:"j F" }}
+                        </p>
+                        {% endif %}
+                        {% if ticket.requires_verification %}
+                        <p class="mt-3 text-xs text-center text-amber-700">
+                            We will ask you to confirm eligibility: {{ ticket.verification_prompt }}
+                        </p>
+                        {% endif %}
                     </div>
 
-                    <!-- Card Footer -->
+                    {% comment %}One button, and a reason when there is not one. A
+                    row that simply vanished when its window closed left people
+                    asking whether the ticket existed at all.{% endcomment %}
                     <div class="px-8 pb-8">
-                        {% if ticket.is_sold_out %}
-                        <button disabled class="w-full py-3 px-6 bg-gray-300 text-gray-500 font-semibold rounded-lg cursor-not-allowed">
-                            Sold Out
-                        </button>
-                        {% else %}
+                        {% if ticket.is_on_sale %}
                         <a href="{% url 'tickets:purchase' %}"
                            class="block w-full py-3 px-6 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-center transition-colors duration-200">
                             Buy Tickets
                         </a>
+                        {% else %}
+                        <p class="w-full py-3 px-6 bg-gray-100 text-gray-600 font-semibold rounded-lg text-center">
+                            {{ ticket.state_label }}
+                        </p>
+                        {% if ticket.sale_state == "not_yet" and ticket.sales_start_at %}
+                        <p class="mt-2 text-sm text-center text-gray-500">
+                            On sale from {{ ticket.sales_start_at|date:"j F Y, g:i a" }}
+                        </p>
+                        {% elif ticket.sale_state == "closed" and ticket.sales_end_at %}
+                        <p class="mt-2 text-sm text-center text-gray-500">
+                            Sales closed on {{ ticket.sales_end_at|date:"j F Y" }}
+                        </p>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -83,6 +119,46 @@
                 </div>
                 <h2 class="text-xl font-semibold text-gray-600 mb-2">Tickets Coming Soon</h2>
                 <p class="text-gray-500">Ticket sales haven't started yet. Check back soon!</p>
+            </div>
+            {% endif %}
+
+            {% if waitlist_enabled and sold_out_types %}
+            <div class="mt-12 max-w-xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
+                <h2 class="text-xl font-bold text-gray-900">Sold out? Join the waiting list</h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Places do come back, through refunds and released allocations. We
+                    will email you if one does. No account needed.
+                </p>
+                <form method="post" action="{% url 'tickets:waitlist_join' %}" class="mt-4 space-y-3">
+                    {% csrf_token %}
+                    <div>
+                        <label for="{{ waitlist_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ waitlist_form.email.label }}
+                        </label>
+                        {{ waitlist_form.email }}
+                    </div>
+                    <div>
+                        <label for="{{ waitlist_form.ticket_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Which ticket?
+                        </label>
+                        {{ waitlist_form.ticket_type }}
+                    </div>
+                    <button type="submit"
+                            class="w-full py-3 px-6 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-lg transition-colors">
+                        Add me to the list
+                    </button>
+                </form>
+                <p class="mt-3 text-xs text-gray-500">
+                    Being told is not a reservation &mdash; everyone at the front of the
+                    list hears at the same time.
+                </p>
+            </div>
+            {% endif %}
+
+            {% if refund_policy %}
+            <div class="mt-10 max-w-3xl mx-auto">
+                <h2 class="text-lg font-bold text-gray-900">Refunds</h2>
+                <p class="mt-2 text-sm text-gray-600 whitespace-pre-line">{{ refund_policy }}</p>
             </div>
             {% endif %}
         </div>

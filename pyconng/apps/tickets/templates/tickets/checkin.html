@@ -1,0 +1,78 @@
+{% extends base_template %}
+
+{% block title %}Check in{% endblock %}
+{% block body_class %}template-checkin{% endblock %}
+
+{% block content %}
+{% comment %}
+  One ticket at a time, which is what a QR code scanned with a phone camera lands
+  on. The confirmation step is deliberate: opening a URL must never admit somebody
+  as a side effect, and a volunteer wants to see a name before waving them through.
+
+  The full scanning screen -- a queue, a running count, tolerance for a bad
+  connection -- is module 11.
+{% endcomment %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 py-10">
+        <div class="max-w-md mx-auto">
+
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Check-in</p>
+            <p class="mt-1 font-mono text-lg text-gray-900">{{ code }}</p>
+
+            <div class="mt-5 rounded-2xl p-6 text-center
+                {% if outcome == 'ok' %}bg-green-50 border border-green-200
+                {% elif outcome == 'already_checked_in' %}bg-amber-50 border border-amber-200
+                {% else %}bg-red-50 border border-red-200{% endif %}">
+                <p class="text-2xl font-bold
+                    {% if outcome == 'ok' %}text-green-800
+                    {% elif outcome == 'already_checked_in' %}text-amber-900
+                    {% else %}text-red-800{% endif %}">
+                    {% if recorded %}Admitted{% else %}{{ message }}{% endif %}
+                </p>
+
+                {% if sale %}
+                <p class="mt-4 text-xl font-semibold text-gray-900">{{ sale.full_name }}</p>
+                <p class="text-sm text-gray-600">{{ sale.ticket_type_name }}</p>
+                {% if sale.tagline %}
+                <p class="text-sm text-gray-500">{{ sale.tagline }}</p>
+                {% endif %}
+                {% if sale.diet and sale.diet != "Omnivorous" %}
+                <p class="mt-2 inline-block px-2 py-0.5 rounded-full bg-white text-xs font-medium text-gray-700 border border-gray-300">
+                    {{ sale.diet }}
+                </p>
+                {% endif %}
+                {% if sale.checked_in_at %}
+                <p class="mt-3 text-sm text-gray-600">
+                    Checked in at {{ sale.checked_in_at|date:"j M, H:i" }}
+                    {% if sale.checked_in_by %}by {{ sale.checked_in_by.get_full_name|default:sale.checked_in_by.email }}{% endif %}
+                </p>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            {% if can_admit %}
+            <form method="post" class="mt-6">
+                {% csrf_token %}
+                <button type="submit"
+                        class="w-full py-4 px-6 bg-teal-600 hover:bg-teal-700 text-white text-lg font-bold rounded-xl transition-colors">
+                    Admit {{ sale.full_name }}
+                </button>
+            </form>
+            {% endif %}
+
+            {% if outcome == 'not_found' %}
+            <p class="mt-6 text-sm text-gray-600">
+                Check the code against the badge. It is ten characters and has no
+                letter O, I, L or Z &mdash; a zero is a zero, and a one is a one.
+            </p>
+            {% endif %}
+
+            <p class="mt-8">
+                <a href="{% url 'tickets:home' %}" class="text-sm text-teal-700 hover:underline">
+                    Back to tickets
+                </a>
+            </p>
+        </div>
+    </section>
+</div>
+{% endblock %}
