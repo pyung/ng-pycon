@@ -1,0 +1,76 @@
+{% extends base_template %}
+
+{% block title %}Certificate of participation{% endblock %}
+{% block body_class %}template-volunteers-certificate{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* A browser's "save as PDF" is the PDF, the same choice the invoices make. */
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; }
+    .cert { box-shadow: none !important; margin: 0 !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 py-10">
+        <div class="max-w-3xl mx-auto">
+            <div class="no-print flex flex-wrap items-center justify-between gap-3">
+                <a href="{% url 'volunteers:my_application' %}" class="text-sm text-teal-700 hover:underline">
+                    &larr; Back to your volunteer page
+                </a>
+                <button type="button" onclick="window.print()"
+                        class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-lg">
+                    Print or save as PDF
+                </button>
+            </div>
+
+            <article class="cert mt-5 bg-white rounded-2xl border-4 border-double border-teal-700 shadow-sm p-10 md:p-14 text-center">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800">
+                    PyCon Nigeria {{ conference_year }}
+                </p>
+                <h1 class="mt-6 text-2xl md:text-3xl font-bold text-gray-900">
+                    Certificate of Participation
+                </h1>
+                <p class="mt-8 text-sm text-gray-500">This is to certify that</p>
+                <p class="mt-2 text-3xl md:text-4xl font-bold text-gray-900">{{ application.full_name }}</p>
+                <p class="mt-6 text-gray-700 max-w-xl mx-auto">
+                    served as a volunteer on the
+                    <strong>{{ application.assigned_team.name|default:"organising" }}</strong> team
+                    at PyCon Nigeria {{ conference_year }}{% if edition.dates_display %},
+                    {{ edition.dates_display }}{% endif %}{% if edition.venue %}, at {{ edition.venue }}{% endif %},
+                    contributing
+                    {{ shifts|length }} shift{{ shifts|length|pluralize }}{% if hours %} across approximately {{ hours|floatformat:0 }} hours{% endif %}.
+                </p>
+                <p class="mt-8 text-sm text-gray-600 max-w-xl mx-auto">
+                    The conference is run by people who are not paid for it. This one
+                    happened because they turned up.
+                </p>
+                <p class="mt-10 text-sm font-semibold text-gray-900">PyCon Nigeria</p>
+                <p class="text-xs text-gray-500">Organising Committee</p>
+            </article>
+
+            {% if shifts %}
+            <div class="no-print mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                <h2 class="text-base font-bold text-gray-900">The shifts this covers</h2>
+                <ul class="mt-2 text-sm text-gray-700 list-none p-0 m-0 space-y-1">
+                    {% for assignment in shifts %}
+                    <li>
+                        {{ assignment.shift.starts_at|date:"D j M, H:i" }} &ndash;
+                        {{ assignment.shift.ends_at|date:"H:i" }} &middot;
+                        {{ assignment.shift.title }}
+                        {% if not assignment.attended %}
+                        <span class="text-gray-400">(not recorded as worked)</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

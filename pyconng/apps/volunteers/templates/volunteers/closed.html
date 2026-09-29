@@ -1,0 +1,31 @@
+{% extends base_template %}
+
+{% block title %}Volunteer applications closed{% endblock %}
+{% block body_class %}template-volunteers-closed{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 pt-16 pb-20">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-3xl font-bold text-gray-900">Volunteer applications are closed</h1>
+            <p class="mt-4 text-gray-600">
+                {% if settings_obj.application_deadline and settings_obj.is_past_deadline %}
+                    They closed on {{ settings_obj.application_deadline|date:"j F Y" }}.
+                {% else %}
+                    The call for volunteers for PyCon Nigeria {{ conference_year }} has not opened yet.
+                {% endif %}
+            </p>
+            {% if application %}
+            <p class="mt-4 text-gray-600">
+                You have an application in. <a href="{% url 'volunteers:my_application' %}" class="text-teal-700 hover:underline">See where it stands</a>.
+            </p>
+            {% endif %}
+            <p class="mt-8">
+                <a href="{% url 'volunteers:landing' %}" class="text-teal-700 font-medium hover:underline">
+                    About volunteering
+                </a>
+            </p>
+        </div>
+    </section>
+</div>
+{% endblock %}

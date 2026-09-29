@@ -1,0 +1,77 @@
+name: Tests and frontend audit
+
+# Nothing ran on a push before this: the only workflow built a container image.
+# The accessibility and performance audit is only worth having if something
+# checks it, so this runs the suite -- which includes that audit over rendered
+# pages -- on every push and pull request.
+
+on:
+  push:
+    branches: [main, uat-restructuring]
+  pull_request:
+
+jobs:
+  test:
+    name: Django tests
+    runs-on: ubuntu-latest
+    env:
+      # SQLite, so no service container is needed. The suite touches no
+      # Postgres-specific behaviour; production parity is the container build's job.
+      DB: sqlite
+      DJANGO_SETTINGS_MODULE: pyconng.settings.dev
+      SECRET_KEY: github-actions-not-a-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Matches the Dockerfile, so a failure here is a failure there.
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django system checks
+        run: python manage.py check
+
+      - name: Check for model changes with no migration
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: python manage.py test --verbosity 2
+
+  assets:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build theme CSS and vendor Alpine
+        run: npm run build
+
+      - name: Every theme must compile to something
+        # A Tailwind build that silently produces an empty file is the failure
+        # mode worth catching: the site renders unstyled and nothing errors.
+        run: |
+          for year in 2024 2025 2026; do
+            file="pyconng/static/css/$year.css"
+            size=$(wc -c < "$file")
+            echo "$file: $size bytes"
+            if [ "$size" -lt 20000 ]; then
+              echo "::error::$file is only $size bytes; the build produced nothing usable."
+              exit 1
+            fi
+            if ! grep -q "skip-link" "$file"; then
+              echo "::error::$file has no .skip-link rule, so the skip link is invisible."
+              exit 1
+            fi
+          done
+          test -s pyconng/static/js/vendor/alpine.esm.js

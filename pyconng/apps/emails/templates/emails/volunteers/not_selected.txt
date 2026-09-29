@@ -1,0 +1,14 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ name }},
+
+Thank you for offering to help with PyCon Nigeria {{ conference_year }}. We are
+not able to place you on a team this year.
+{% if note %}
+{{ note }}
+{% endif %}
+This is almost always about the shape of the rota rather than anything about you -
+some teams get four times the offers they have places for. Please do apply again
+next year; it counts for something that you did.
+
+We hope to see you at the conference either way,
+PyCon Nigeria Team
+{% endblock %}

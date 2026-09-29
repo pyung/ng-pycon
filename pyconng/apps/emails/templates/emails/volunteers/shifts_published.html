@@ -1,0 +1,18 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your volunteer shifts{% endblock %}
+{% block content %}
+  <p>Hi {{ name }},</p>
+  <p>
+    The volunteer roster for PyCon Nigeria {{ conference_year }} is settled. Your
+    shifts are on your volunteer page now.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">See your shifts</a>
+  </p>
+  <p>
+    Please check them now rather than on the day. If a shift no longer works, tell
+    {% if lead_name %}{{ lead_name }}{% else %}your team lead{% endif %} as soon as
+    you can &mdash; swapping a week out is easy, and on the morning it is not.
+  </p>
+  <p>Thank you,<br>PyCon Nigeria Team</p>
+{% endblock %}

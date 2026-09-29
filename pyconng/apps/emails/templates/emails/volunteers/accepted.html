@@ -1,0 +1,39 @@
+{% extends "emails/_base.html" %}
+{% block title %}You're on the volunteer team{% endblock %}
+{% block content %}
+  <p>Hi {{ name }},</p>
+  <p>
+    You are on the PyCon Nigeria {{ conference_year }} volunteer team. Thank you
+    &mdash; the conference does not happen without people doing this.
+  </p>
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;width:100%;">
+    <tr>
+      <td style="background:#f0f1f5;border-radius:8px;padding:16px 20px;">
+        <p style="margin:0 0 4px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">Your team</p>
+        <p style="margin:0;font-size:18px;font-weight:600;">{{ team }}</p>
+        {% if lead_name %}
+        <p style="margin:8px 0 0;font-size:14px;color:#4b5563;">Your lead is {{ lead_name }}.</p>
+        {% endif %}
+        {% if team_description %}
+        <p style="margin:8px 0 0;font-size:14px;color:#4b5563;">{{ team_description }}</p>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% if note %}
+  <p>{{ note }}</p>
+  {% endif %}
+  <p>
+    <strong>Your ticket is sorted.</strong> A volunteer ticket has been issued to
+    this account &mdash; there is nothing to pay and nothing to do. It carries a QR
+    code for the door like any other.
+  </p>
+  <p>
+    Your shifts will appear on the page below once the roster is settled. We will
+    email you when it is. Please do not plan around a draft.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Your volunteer page</a>
+  </p>
+  <p>See you there,<br>PyCon Nigeria Team</p>
+{% endblock %}

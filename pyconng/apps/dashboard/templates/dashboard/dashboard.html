@@ -39,6 +39,47 @@
                             View Tickets
                         </a>
                     </div>
+                    {# Volunteering #}
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div class="text-2xl mb-3" aria-hidden="true">🙋</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">Volunteering</h3>
+                        {% if volunteer_application %}
+                            <p class="text-sm text-gray-500 mb-2">
+                                Status: <span class="font-medium text-gray-700">{{ volunteer_application.get_status_display }}</span>
+                            </p>
+                            {% if volunteer_application.assigned_team %}
+                            <p class="text-sm text-gray-500 mb-2">Team: {{ volunteer_application.assigned_team.name }}</p>
+                            {% endif %}
+                            {% if volunteer_next_shift %}
+                            {% comment %}The next shift rather than all of them: "when do
+                            I next need to be somewhere" is what a summary should answer.{% endcomment %}
+                            <p class="text-sm text-gray-500 mb-4">
+                                Next shift: {{ volunteer_next_shift.starts_at|date:"D j M, H:i" }}
+                                {% if volunteer_shift_count > 1 %}
+                                <span class="block text-xs">and {{ volunteer_shift_count|add:"-1" }} more</span>
+                                {% endif %}
+                            </p>
+                            {% elif volunteer_application.is_accepted and not volunteer_shifts_published %}
+                            <p class="text-sm text-gray-500 mb-4">Your shifts appear once the roster is settled.</p>
+                            {% endif %}
+                            <a href="{% url 'volunteers:my_application' %}"
+                               class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
+                                {% if volunteer_next_shift %}See my shifts{% else %}My application{% endif %}
+                            </a>
+                        {% elif volunteer_open %}
+                            <p class="text-sm text-gray-500 mb-4">Help run the conference. Volunteers get a free ticket.</p>
+                            <a href="{% url 'volunteers:apply' %}"
+                               class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
+                                Apply to volunteer
+                            </a>
+                        {% else %}
+                            <p class="text-sm text-gray-500 mb-4">The call for volunteers is not open at the moment.</p>
+                            <a href="{% url 'volunteers:landing' %}"
+                               class="inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-gray-50 font-medium rounded-lg transition-colors">
+                                About volunteering
+                            </a>
+                        {% endif %}
+                    </div>
                     {# Travel Grant #}
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <div class="text-2xl mb-3">✈️</div>
@@ -181,6 +222,29 @@
                        class="inline-flex items-center px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
                         Grant Admin Dashboard
                     </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ========== VOLUNTEER COORDINATOR SECTION ========== #}
+            {% if roles.is_volunteer_chair or roles.is_organizer %}
+            <div class="mb-10">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Volunteer Coordinator</h2>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <p class="text-gray-600 mb-4">
+                        Read applications, place people on teams, build the roster, and see
+                        which shifts are short
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'volunteers:coordinator_dashboard' %}"
+                           class="inline-flex items-center px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
+                            Volunteers
+                        </a>
+                        <a href="{% url 'volunteers:shifts' %}"
+                           class="inline-flex items-center px-5 py-2.5 border border-gray-300 hover:bg-gray-50 font-medium rounded-lg transition-colors">
+                            Shifts &amp; roster
+                        </a>
+                    </div>
                 </div>
             </div>
             {% endif %}

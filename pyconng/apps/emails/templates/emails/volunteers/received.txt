@@ -1,0 +1,15 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ name }},
+
+Thank you for offering to help run PyCon Nigeria {{ conference_year }}. Your
+application has reached the volunteer coordinator.
+
+We read every one, and we will tell you either way - including if the answer is
+no, which happens simply because there are more offers than places on some teams.
+
+You can change your answers, including your availability, up until we make a
+decision:
+
+{{ dashboard_url }}
+
+PyCon Nigeria Team
+{% endblock %}

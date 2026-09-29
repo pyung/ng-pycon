@@ -95,6 +95,41 @@ def _get_current_year_sponsor_page(request):
     return qs.first()
 
 
+def _volunteer_context(user):
+    """
+    Volunteer state for the dashboard: where they stand, and their next shift.
+
+    The next shift rather than all of them, because the dashboard is a summary and
+    "when do I next need to be somewhere" is the question it should answer. Fails
+    soft: the dashboard is the page people land on, and it must not break because a
+    volunteer table is mid-migration.
+    """
+    try:
+        from volunteers import services as volunteer_services
+
+        year = current_year()
+        application = volunteer_services.application_for(user, year)
+        settings_obj = volunteer_services.settings_for(year)
+        roster = []
+        if application is not None and settings_obj.shifts_published:
+            roster = list(volunteer_services.roster_for(application))
+        return {
+            "volunteer_application": application,
+            "volunteer_open": settings_obj.is_open,
+            "volunteer_shifts_published": settings_obj.shifts_published,
+            "volunteer_shift_count": len(roster),
+            "volunteer_next_shift": roster[0].shift if roster else None,
+        }
+    except Exception:  # noqa: BLE001
+        return {
+            "volunteer_application": None,
+            "volunteer_open": False,
+            "volunteer_shifts_published": False,
+            "volunteer_shift_count": 0,
+            "volunteer_next_shift": None,
+        }
+
+
 def dashboard(request):
     """Unified role-based dashboard. Login required. Current year only."""
     if not request.user.is_authenticated:
@@ -118,6 +153,7 @@ def dashboard(request):
         ).count()
 
     sponsor_page = _get_current_year_sponsor_page(request)
+    volunteer = _volunteer_context(request.user)
 
     context = {
         "conference_year": current_year(),
@@ -130,6 +166,7 @@ def dashboard(request):
         "cfp_context": cfp_context,
         "grant_assignment_count": grant_assignment_count,
         "sponsor_page": sponsor_page,
+        **volunteer,
     }
 
     return render(request, "dashboard/dashboard.html", context)

@@ -1,0 +1,23 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ name }},
+
+You are on the PyCon Nigeria {{ conference_year }} volunteer team. Thank you -
+the conference does not happen without people doing this.
+
+Your team: {{ team }}
+{% if lead_name %}Your lead is {{ lead_name }}.
+{% endif %}{% if team_description %}{{ team_description }}
+{% endif %}{% if note %}
+{{ note }}
+{% endif %}
+Your ticket is sorted. A volunteer ticket has been issued to this account -
+there is nothing to pay and nothing to do. It carries a QR code for the door like
+any other.
+
+Your shifts will appear on the page below once the roster is settled. We will
+email you when it is. Please do not plan around a draft.
+
+{{ dashboard_url }}
+
+See you there,
+PyCon Nigeria Team
+{% endblock %}

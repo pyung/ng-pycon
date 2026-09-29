@@ -22,6 +22,7 @@ NAMED_URLS = (
     "cfp:landing",
     "tickets:home",
     "grants:landing",
+    "volunteers:landing",
     "login",
     "signup",
     "search",

@@ -1,0 +1,232 @@
+{% extends base_template %}
+
+{% block title %}{{ application.full_name }}{% endblock %}
+{% block body_class %}template-volunteers-review{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 pt-12 pb-16">
+        <div class="max-w-5xl mx-auto">
+            <a href="{% url 'volunteers:coordinator_dashboard' %}" class="text-sm text-teal-700 hover:underline">
+                &larr; All volunteers
+            </a>
+
+            {% include "volunteers/_messages.html" %}
+
+            <h1 class="mt-4 text-3xl font-bold text-gray-900">{{ application.full_name }}</h1>
+            <p class="mt-1 text-gray-600">
+                {{ application.user.email }}
+                {% if application.phone %} &middot; {{ application.phone }}{% endif %}
+                &middot; <span class="font-medium">{{ application.get_status_display }}</span>
+            </p>
+
+            <div class="mt-6 grid gap-6 lg:grid-cols-3">
+                <div class="lg:col-span-2 space-y-5">
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="text-lg font-bold text-gray-900">What they said</h2>
+                        <dl class="mt-3 space-y-4 text-sm">
+                            <div>
+                                <dt class="font-medium text-gray-500">Teams they offered for</dt>
+                                <dd class="text-gray-900">{{ application.team_names|default:"None" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-500">Experience</dt>
+                                <dd class="text-gray-900">{{ application.get_experience_display }}</dd>
+                            </div>
+                            {% if application.experience_detail %}
+                            <div>
+                                <dt class="font-medium text-gray-500">In their words</dt>
+                                <dd class="text-gray-700">{{ application.experience_detail|linebreaksbr }}</dd>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <dt class="font-medium text-gray-500">Why they want to help</dt>
+                                <dd class="text-gray-700">{{ application.motivation|linebreaksbr }}</dd>
+                            </div>
+                            {% if application.skills %}
+                            <div>
+                                <dt class="font-medium text-gray-500">Useful to know</dt>
+                                <dd class="text-gray-700">{{ application.skills }}</dd>
+                            </div>
+                            {% endif %}
+                        </dl>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="text-lg font-bold text-gray-900">When they can work</h2>
+                        {% if availability %}
+                        <ul class="mt-3 text-sm text-gray-700 list-none p-0 m-0 space-y-1">
+                            {% for day, periods in availability %}
+                            <li><strong>{{ day|date:"D j M" }}</strong>: {{ periods|join:", " }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="mt-2 text-sm text-gray-500">They did not give any availability.</p>
+                        {% endif %}
+                    </div>
+
+                    {% comment %}Read before assigning a shift, not after.{% endcomment %}
+                    {% if application.accessibility_needs or application.dietary_requirements or application.emergency_contact_name %}
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="text-lg font-bold text-gray-900">For the day</h2>
+                        <dl class="mt-3 grid gap-4 sm:grid-cols-2 text-sm">
+                            {% if application.accessibility_needs %}
+                            <div class="sm:col-span-2 rounded-lg bg-teal-50 border border-teal-200 p-4">
+                                <dt class="font-semibold text-teal-900">What they need to work comfortably</dt>
+                                <dd class="mt-1 text-teal-900">{{ application.accessibility_needs|linebreaksbr }}</dd>
+                            </div>
+                            {% endif %}
+                            {% if application.tshirt_size %}
+                            <div><dt class="font-medium text-gray-500">T-shirt</dt><dd class="text-gray-900">{{ application.get_tshirt_size_display }}</dd></div>
+                            {% endif %}
+                            {% if application.dietary_requirements %}
+                            <div><dt class="font-medium text-gray-500">Dietary</dt><dd class="text-gray-900">{{ application.dietary_requirements }}</dd></div>
+                            {% endif %}
+                            {% if application.emergency_contact_name %}
+                            <div class="sm:col-span-2">
+                                <dt class="font-medium text-gray-500">Emergency contact</dt>
+                                <dd class="text-gray-900">{{ application.emergency_contact_name }}{% if application.emergency_contact_phone %} &middot; {{ application.emergency_contact_phone }}{% endif %}</dd>
+                            </div>
+                            {% endif %}
+                        </dl>
+                    </div>
+                    {% endif %}
+
+                    {% if application.is_accepted %}
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="text-lg font-bold text-gray-900">Shifts</h2>
+
+                        {% if roster %}
+                        <ul class="mt-3 space-y-3 list-none p-0 m-0">
+                            {% for assignment in roster %}
+                            <li class="border-t border-gray-100 pt-3 first:border-0 first:pt-0 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ assignment.shift.title }}</p>
+                                    <p class="text-sm text-gray-600">
+                                        {{ assignment.shift.starts_at|date:"D j M, H:i" }} &ndash;
+                                        {{ assignment.shift.ends_at|date:"H:i" }}
+                                        &middot; {{ assignment.shift.team.name }}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="attendance">
+                                        <input type="hidden" name="assignment" value="{{ assignment.pk }}">
+                                        <input type="hidden" name="attended" value="{% if assignment.attended %}0{% else %}1{% endif %}">
+                                        <button type="submit"
+                                                class="px-3 py-1.5 text-sm rounded-lg border {% if assignment.attended %}bg-green-50 border-green-300 text-green-800{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}">
+                                            {% if assignment.attended %}Worked{% else %}Mark worked{% endif %}
+                                        </button>
+                                    </form>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="unassign_shift">
+                                        <input type="hidden" name="assignment" value="{{ assignment.pk }}">
+                                        <button type="submit"
+                                                class="px-3 py-1.5 text-sm rounded-lg border border-red-300 text-red-700 hover:bg-red-50">
+                                            Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="mt-2 text-sm text-gray-500">Not on any shift yet.</p>
+                        {% endif %}
+
+                        <form method="post" class="mt-5 flex flex-wrap items-end gap-3 pt-4 border-t border-gray-100">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="assign_shift">
+                            <div class="grow min-w-[16rem]">
+                                <label for="shift" class="block text-sm font-medium text-gray-700 mb-1">Add to a shift</label>
+                                <select name="shift" id="shift" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm">
+                                    {% for shift in open_shifts %}
+                                    <option value="{{ shift.pk }}">
+                                        {{ shift.starts_at|date:"D j M H:i" }} &middot; {{ shift.title }}
+                                        ({{ shift.assigned_count }}/{{ shift.capacity }}){% if shift.is_full %} full{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" name="allow_overlap" id="allow_overlap"
+                                       class="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+                                <label for="allow_overlap" class="text-sm text-gray-600">Allow an overlap</label>
+                            </div>
+                            <button type="submit"
+                                    class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-sm">
+                                Add
+                            </button>
+                        </form>
+                        <p class="mt-2 text-xs text-gray-500">
+                            An overlapping shift is refused unless you tick the box &mdash;
+                            a double-booked volunteer ends up in the wrong room.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-5">
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="text-lg font-bold text-gray-900">Decide</h2>
+                        {% if ticket %}
+                        <p class="mt-2 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                            Volunteer ticket <span class="font-mono">{{ ticket.order }}</span> issued.
+                        </p>
+                        {% endif %}
+                        <form method="post" class="mt-4 space-y-4">
+                            {% csrf_token %}
+                            {% if form.non_field_errors %}
+                            <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-800" role="alert">
+                                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <span class="block text-sm font-medium text-gray-700 mb-2" id="decision-label">Decision</span>
+                                <div role="group" aria-labelledby="decision-label" class="space-y-2">
+                                    {% for choice in form.decision %}
+                                    <div class="flex items-center gap-2">
+                                        {{ choice.tag }}
+                                        <label for="{{ choice.id_for_label }}" class="text-sm text-gray-700">{{ choice.choice_label }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% for error in form.decision.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            {% for field in form %}
+                                {% if field.name != "decision" %}
+                                {% include "volunteers/_field.html" with field=field %}
+                                {% endif %}
+                            {% endfor %}
+
+                            <button type="submit"
+                                    class="w-full py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                                Save decision
+                            </button>
+                        </form>
+                        <p class="mt-3 text-xs text-gray-500">
+                            Accepting grants the volunteer role for this edition and issues
+                            their free ticket. Any other outcome takes the role back and
+                            releases their shifts.
+                        </p>
+                    </div>
+
+                    {% if application.internal_note %}
+                    <div class="bg-amber-50 rounded-xl border border-amber-200 p-5">
+                        <h2 class="text-sm font-bold text-amber-900">Internal note</h2>
+                        <p class="mt-1 text-sm text-amber-900">{{ application.internal_note|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

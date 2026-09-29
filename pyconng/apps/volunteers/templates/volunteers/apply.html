@@ -1,0 +1,154 @@
+{% extends base_template %}
+{% load wagtailcore_tags %}
+
+{% block title %}{% if editing %}Edit your volunteer application{% else %}Apply to volunteer{% endif %}{% endblock %}
+{% block body_class %}template-volunteers-apply{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 pt-14 pb-16">
+        <div class="max-w-2xl mx-auto">
+            <a href="{% url 'volunteers:landing' %}" class="text-sm text-teal-700 hover:underline">
+                &larr; About volunteering
+            </a>
+
+            <h1 class="mt-4 text-3xl font-bold text-gray-900">
+                {% if editing %}Edit your application{% else %}Apply to volunteer{% endif %}
+            </h1>
+            <p class="mt-3 text-gray-600">
+                {% if editing %}
+                    You can change anything here until we make a decision.
+                {% else %}
+                    Two questions are required &mdash; which teams, and why. The rest is
+                    optional, and each one says why we are asking.
+                {% endif %}
+            </p>
+
+            {% include "volunteers/_messages.html" %}
+
+            {% if form.non_field_errors %}
+            <div class="mt-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800" role="alert">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="mt-8 space-y-6" novalidate>
+                {% csrf_token %}
+
+                <fieldset class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 md:p-6 space-y-4">
+                    <legend class="text-base font-bold text-gray-900 px-1">About you</legend>
+                    {% for field in form %}
+                        {% if field.name == "full_name" or field.name == "phone" %}
+                        {% include "volunteers/_field.html" with field=field %}
+                        {% endif %}
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 md:p-6 space-y-4">
+                    <legend class="text-base font-bold text-gray-900 px-1">What you would like to do</legend>
+
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2" id="teams-label">
+                            {{ form.teams.label }} <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(required)</span>
+                        </span>
+                        <div role="group" aria-labelledby="teams-label" class="space-y-2">
+                            {% for choice in form.teams %}
+                            <div class="flex items-start gap-2">
+                                {{ choice.tag }}
+                                <label for="{{ choice.id_for_label }}" class="text-sm text-gray-700">{{ choice.choice_label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">{{ form.teams.help_text }}</p>
+                        {% for error in form.teams.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2" id="experience-label">{{ form.experience.label }}</span>
+                        <div role="group" aria-labelledby="experience-label" class="space-y-2">
+                            {% for choice in form.experience %}
+                            <div class="flex items-start gap-2">
+                                {{ choice.tag }}
+                                <label for="{{ choice.id_for_label }}" class="text-sm text-gray-700">{{ choice.choice_label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% for field in form %}
+                        {% if field.name == "experience_detail" or field.name == "motivation" or field.name == "skills" %}
+                        {% include "volunteers/_field.html" with field=field %}
+                        {% endif %}
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 md:p-6">
+                    <legend class="text-base font-bold text-gray-900 px-1">When you could work</legend>
+                    {% if form.availability_grid %}
+                    <p class="mt-1 text-sm text-gray-600">
+                        Tick anything that could work. Nothing here is a commitment to a
+                        specific shift &mdash; we build the roster around what people can do.
+                    </p>
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <caption class="sr-only">Your availability by day and time of day</caption>
+                            <thead>
+                                <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
+                                    <th scope="col" class="pb-2 pr-4">Day</th>
+                                    <th scope="col" class="pb-2 px-2 text-center">Morning</th>
+                                    <th scope="col" class="pb-2 px-2 text-center">Afternoon</th>
+                                    <th scope="col" class="pb-2 px-2 text-center">Evening</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day, label, fields in form.availability_grid %}
+                                <tr class="border-t border-gray-100">
+                                    <th scope="row" class="py-3 pr-4 text-left font-medium text-gray-900">
+                                        {{ day|date:"D j M" }}
+                                        <span class="block text-xs font-normal text-gray-500">{{ label }}</span>
+                                    </th>
+                                    {% for field in fields %}
+                                    <td class="py-3 px-2 text-center">
+                                        <label class="sr-only" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                        {{ field }}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                        The conference dates are not set yet, so we cannot ask about
+                        specific days. Apply anyway &mdash; we will come back to you about
+                        availability once they are.
+                    </p>
+                    {% endif %}
+                </fieldset>
+
+                <fieldset class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 md:p-6 space-y-4">
+                    <legend class="text-base font-bold text-gray-900 px-1">The day itself</legend>
+                    {% for field in form %}
+                        {% if field.name == "tshirt_size" or field.name == "dietary_requirements" or field.name == "accessibility_needs" or field.name == "emergency_contact_name" or field.name == "emergency_contact_phone" %}
+                        {% include "volunteers/_field.html" with field=field %}
+                        {% endif %}
+                    {% endfor %}
+                </fieldset>
+
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <button type="submit"
+                            class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                        {% if editing %}Save changes{% else %}Send my application{% endif %}
+                    </button>
+                    {% if not editing %}
+                    <p class="text-sm text-gray-500">You will get an email confirming it arrived.</p>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -47,6 +47,7 @@ class Role(models.TextChoices):
     SPONSOR_CONTACT = "sponsor_contact", "Sponsor contact"
     ORGANIZER = "organizer", "Organizer"
     COC_TEAM = "coc_team", "Code of Conduct team"
+    VOLUNTEER_CHAIR = "volunteer_chair", "Volunteer coordinator"
 
 
 #: Computed from other records, so they can never be granted by hand.
@@ -73,6 +74,13 @@ IMPLIES = {
     Role.GRANT_CHAIR: frozenset({Role.GRANT_REVIEWER, Role.FINANCE}),
     Role.SUPER_ADMIN: frozenset({Role.ORGANIZER}),
 }
+
+#: VOLUNTEER_CHAIR implies nothing, and nothing implies it. It is not a senior
+#: version of VOLUNTEER: a coordinator reviews applications and builds rosters,
+#: and is frequently not working a shift themselves. Volunteer views accept the
+#: coordinator or an Organizer, which is stated at each view rather than hidden
+#: in an implication, because the two roles reach those pages for different
+#: reasons.
 
 
 def grantable_choices():

@@ -1,0 +1,13 @@
+{% comment %}One labelled field. Used everywhere so a label is never forgotten.{% endcomment %}
+<div>
+    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+        {{ field.label }}{% if field.field.required %} <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(required)</span>{% endif %}
+    </label>
+    {{ field }}
+    {% if field.help_text %}
+    <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+    {% endif %}
+    {% for error in field.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+    {% endfor %}
+</div>

@@ -1,0 +1,22 @@
+{% extends "emails/_base.html" %}
+{% block title %}We have your volunteer application{% endblock %}
+{% block content %}
+  <p>Hi {{ name }},</p>
+  <p>
+    Thank you for offering to help run PyCon Nigeria {{ conference_year }}. Your
+    application has reached the volunteer coordinator.
+  </p>
+  <p>
+    We read every one, and we will tell you either way &mdash; including if the
+    answer is no, which happens simply because there are more offers than places
+    on some teams.
+  </p>
+  <p>
+    You can change your answers, including your availability, up until we make a
+    decision:
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Your application</a>
+  </p>
+  <p>PyCon Nigeria Team</p>
+{% endblock %}

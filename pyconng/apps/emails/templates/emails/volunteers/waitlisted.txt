@@ -1,0 +1,17 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ name }},
+
+Thank you for offering to help with PyCon Nigeria {{ conference_year }}. We have
+more offers than places on the teams you picked, so you are on the reserve list
+rather than turned down.
+{% if note %}
+{{ note }}
+{% endif %}
+People do drop out, and teams grow as the programme settles, so there is a real
+chance we come back to you. We will tell you either way before the conference.
+
+You have no volunteer ticket yet, so if you were planning to attend either way,
+buy a ticket rather than waiting on this.
+
+Thank you for your patience,
+PyCon Nigeria Team
+{% endblock %}

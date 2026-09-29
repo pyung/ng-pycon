@@ -1,0 +1,161 @@
+{% extends base_template %}
+
+{% block title %}Your volunteer application{% endblock %}
+{% block body_class %}template-volunteers-mine{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 pt-14 pb-16">
+        <div class="max-w-3xl mx-auto">
+            {% include "volunteers/_messages.html" %}
+
+            <h1 class="text-3xl font-bold text-gray-900">Your volunteer application</h1>
+            <p class="mt-2 text-gray-600">PyCon Nigeria {{ conference_year }}</p>
+
+            <div class="mt-6 rounded-xl border p-6
+                {% if application.is_accepted %}bg-green-50 border-green-200
+                {% elif application.status == 'waitlisted' %}bg-amber-50 border-amber-200
+                {% elif application.status == 'not_selected' or application.status == 'withdrawn' %}bg-gray-100 border-gray-200
+                {% else %}bg-white border-gray-100 shadow-sm{% endif %}">
+                <p class="text-sm font-semibold uppercase tracking-wide text-gray-500">Status</p>
+                <p class="mt-1 text-2xl font-bold text-gray-900">{{ application.get_status_display }}</p>
+
+                {% if application.is_accepted and application.assigned_team %}
+                <p class="mt-3 text-gray-800">
+                    You are on <strong>{{ application.assigned_team.name }}</strong>{% if application.lead_contact %},
+                    led by {{ application.lead_contact.get_full_name|default:application.lead_contact.email }}{% endif %}.
+                </p>
+                {% endif %}
+
+                {% if application.decision_note %}
+                <p class="mt-3 text-gray-700">{{ application.decision_note }}</p>
+                {% endif %}
+
+                {% if application.status == 'submitted' or application.status == 'under_review' %}
+                <p class="mt-3 text-sm text-gray-600">
+                    We will tell you either way. You can change your answers below until
+                    we decide.
+                </p>
+                {% endif %}
+            </div>
+
+            {% if ticket %}
+            <div class="mt-5 rounded-xl bg-white border border-gray-100 shadow-sm p-6">
+                <h2 class="text-lg font-bold text-gray-900">Your ticket</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Issued to you as a volunteer &mdash; nothing to pay.
+                    Order <span class="font-mono">{{ ticket.order }}</span>.
+                </p>
+                <a href="{% url 'tickets:detail' order=ticket.order %}"
+                   class="mt-3 inline-block px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-lg transition-colors">
+                    Open your ticket and QR code
+                </a>
+            </div>
+            {% endif %}
+
+            {% if application.is_accepted %}
+            <div class="mt-5 rounded-xl bg-white border border-gray-100 shadow-sm p-6">
+                <h2 class="text-lg font-bold text-gray-900">Your shifts</h2>
+                {% if not shifts_published %}
+                <p class="mt-2 text-sm text-gray-600">
+                    The roster is still being built. We will email you the moment it is
+                    settled &mdash; please do not plan around a draft.
+                </p>
+                {% elif roster %}
+                <ul class="mt-3 space-y-3 list-none p-0">
+                    {% for assignment in roster %}
+                    <li class="border-t border-gray-100 pt-3 first:border-0 first:pt-0">
+                        <p class="font-semibold text-gray-900">{{ assignment.shift.title }}</p>
+                        <p class="text-sm text-gray-600">
+                            <time datetime="{{ assignment.shift.starts_at|date:'c' }}">
+                                {{ assignment.shift.starts_at|date:"l j F, H:i" }}
+                            </time>
+                            &ndash; {{ assignment.shift.ends_at|date:"H:i" }}
+                            &middot; {{ assignment.shift.team.name }}
+                        </p>
+                        {% if assignment.shift.location %}
+                        <p class="text-sm text-gray-600">{{ assignment.shift.location }}</p>
+                        {% endif %}
+                        {% if assignment.shift.notes %}
+                        <p class="mt-1 text-sm text-gray-500">{{ assignment.shift.notes }}</p>
+                        {% endif %}
+                        {% if assignment.attended %}
+                        <p class="mt-1 text-xs font-semibold text-green-700">Worked</p>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="mt-2 text-sm text-gray-600">
+                    You are not on a shift yet. If that still looks wrong once the
+                    conference is close, tell your team lead.
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if certificate_ready %}
+            <div class="mt-5 rounded-xl bg-white border border-gray-100 shadow-sm p-6">
+                <h2 class="text-lg font-bold text-gray-900">Your certificate</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Thank you for the shifts you worked.
+                </p>
+                <a href="{% url 'volunteers:certificate' %}"
+                   class="mt-3 inline-block px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                    Open your certificate
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="mt-5 rounded-xl bg-white border border-gray-100 shadow-sm p-6">
+                <h2 class="text-lg font-bold text-gray-900">What you told us</h2>
+                <dl class="mt-3 grid gap-4 sm:grid-cols-2 text-sm">
+                    <div>
+                        <dt class="font-medium text-gray-500">Teams you offered for</dt>
+                        <dd class="text-gray-900">{{ application.team_names|default:"None" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-medium text-gray-500">Experience</dt>
+                        <dd class="text-gray-900">{{ application.get_experience_display }}</dd>
+                    </div>
+                    {% if application.tshirt_size %}
+                    <div>
+                        <dt class="font-medium text-gray-500">T-shirt</dt>
+                        <dd class="text-gray-900">{{ application.get_tshirt_size_display }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if application.availability_summary %}
+                    <div class="sm:col-span-2">
+                        <dt class="font-medium text-gray-500">Availability</dt>
+                        <dd class="text-gray-900">
+                            <ul class="list-none p-0 m-0">
+                                {% for day, periods in application.availability_summary %}
+                                <li>{{ day|date:"D j M" }}: {{ periods|join:", " }}</li>
+                                {% endfor %}
+                            </ul>
+                        </dd>
+                    </div>
+                    {% endif %}
+                </dl>
+
+                {% if application.is_editable %}
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <a href="{% url 'volunteers:apply' %}"
+                       class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 font-semibold rounded-lg transition-colors">
+                        Edit my answers
+                    </a>
+                    <form method="post" action="{% url 'volunteers:withdraw' %}"
+                          onsubmit="return confirm('Withdraw your volunteer application?');">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="px-5 py-2.5 border border-red-300 text-red-700 hover:bg-red-50 font-semibold rounded-lg transition-colors">
+                            Withdraw
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

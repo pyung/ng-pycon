@@ -1,0 +1,14 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ name }},
+
+The volunteer roster for PyCon Nigeria {{ conference_year }} is settled. Your
+shifts are on your volunteer page now.
+
+{{ dashboard_url }}
+
+Please check them now rather than on the day. If a shift no longer works, tell
+{% if lead_name %}{{ lead_name }}{% else %}your team lead{% endif %} as soon as you
+can - swapping a week out is easy, and on the morning it is not.
+
+Thank you,
+PyCon Nigeria Team
+{% endblock %}

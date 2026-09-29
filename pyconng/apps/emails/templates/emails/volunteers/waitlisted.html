@@ -1,0 +1,22 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your volunteer application{% endblock %}
+{% block content %}
+  <p>Hi {{ name }},</p>
+  <p>
+    Thank you for offering to help with PyCon Nigeria {{ conference_year }}. We
+    have more offers than places on the teams you picked, so you are on the
+    reserve list rather than turned down.
+  </p>
+  {% if note %}
+  <p>{{ note }}</p>
+  {% endif %}
+  <p>
+    People do drop out, and teams grow as the programme settles, so there is a real
+    chance we come back to you. We will tell you either way before the conference.
+  </p>
+  <p style="font-size:14px;color:#6b7280;">
+    You have no volunteer ticket yet, so if you were planning to attend either way,
+    buy a ticket rather than waiting on this.
+  </p>
+  <p>Thank you for your patience,<br>PyCon Nigeria Team</p>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends base_template %}
+
+{% block title %}Shifts and roster{% endblock %}
+{% block body_class %}template-volunteers-shifts{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 pt-12 pb-16">
+        <div class="max-w-5xl mx-auto">
+            <a href="{% url 'volunteers:coordinator_dashboard' %}" class="text-sm text-teal-700 hover:underline">
+                &larr; All volunteers
+            </a>
+
+            {% include "volunteers/_messages.html" %}
+
+            <h1 class="mt-4 text-3xl font-bold text-gray-900">Shifts and roster</h1>
+
+            <div class="mt-4 rounded-xl border p-5 {% if settings_obj.shifts_published %}bg-green-50 border-green-200{% else %}bg-amber-50 border-amber-200{% endif %}">
+                {% if settings_obj.shifts_published %}
+                <p class="font-semibold text-green-900">The roster is live.</p>
+                <p class="mt-1 text-sm text-green-900">
+                    Volunteers can see their own shifts. Hide it again if you need to
+                    rebuild &mdash; nobody is emailed about that.
+                </p>
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="unpublish">
+                    <button type="submit" class="px-4 py-2 text-sm border border-green-300 bg-white rounded-lg hover:bg-green-100">
+                        Hide it for rebuilding
+                    </button>
+                </form>
+                {% else %}
+                <p class="font-semibold text-amber-900">The roster is hidden.</p>
+                <p class="mt-1 text-sm text-amber-900">
+                    Volunteers cannot see their shifts yet. Publishing emails everyone
+                    who is on one &mdash; and nobody who is not.
+                </p>
+                <form method="post" class="mt-3"
+                      onsubmit="return confirm('Publish the roster and email every volunteer on it?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="publish">
+                    <button type="submit" class="px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg">
+                        Publish and tell everyone
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            {% if gaps %}
+            <div class="mt-6 rounded-xl bg-red-50 border border-red-200 p-5">
+                <h2 class="font-semibold text-red-900">{{ gaps|length }} shift{{ gaps|length|pluralize }} short of people</h2>
+                <ul class="mt-2 text-sm text-red-900 list-none p-0 m-0 space-y-1">
+                    {% for gap in gaps %}
+                    <li>
+                        <a href="{% url 'volunteers:shift_detail' shift_id=gap.shift.pk %}" class="underline">
+                            {{ gap.shift.title }}
+                        </a>
+                        &middot; {{ gap.shift.starts_at|date:"D j M H:i" }}
+                        &middot; needs {{ gap.needed }} more
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <h2 class="mt-10 text-xl font-bold text-gray-900">Add a shift</h2>
+            <form method="post" class="mt-3 bg-white rounded-xl border border-gray-100 shadow-sm p-6 grid gap-4 sm:grid-cols-2">
+                {% csrf_token %}
+                {% for field in form %}
+                {% include "volunteers/_field.html" with field=field %}
+                {% endfor %}
+                <div class="sm:col-span-2">
+                    <button type="submit"
+                            class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+                        Add shift
+                    </button>
+                </div>
+            </form>
+
+            <h2 class="mt-10 text-xl font-bold text-gray-900">All shifts</h2>
+            <div class="mt-3 overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
+                <table class="w-full text-sm">
+                    <caption class="sr-only">Shifts for {{ conference_year }}</caption>
+                    <thead>
+                        <tr class="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200">
+                            <th scope="col" class="px-4 py-3">When</th>
+                            <th scope="col" class="px-4 py-3">Shift</th>
+                            <th scope="col" class="px-4 py-3">Team</th>
+                            <th scope="col" class="px-4 py-3">Staffed</th>
+                            <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in shifts %}
+                        <tr class="border-b border-gray-100 last:border-0">
+                            <td class="px-4 py-3 text-gray-700 whitespace-nowrap">
+                                {{ shift.starts_at|date:"D j M, H:i" }}&ndash;{{ shift.ends_at|date:"H:i" }}
+                            </td>
+                            <th scope="row" class="px-4 py-3 text-left font-medium">
+                                <a href="{% url 'volunteers:shift_detail' shift_id=shift.pk %}" class="text-teal-700 hover:underline">
+                                    {{ shift.title }}
+                                </a>
+                                {% if shift.location %}
+                                <span class="block text-xs font-normal text-gray-500">{{ shift.location }}</span>
+                                {% endif %}
+                            </th>
+                            <td class="px-4 py-3 text-gray-600">{{ shift.team.name }}</td>
+                            <td class="px-4 py-3 {% if shift.is_understaffed %}text-red-700 font-semibold{% else %}text-gray-700{% endif %}">
+                                {{ shift.assigned_count }}/{{ shift.capacity }}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <form method="post" onsubmit="return confirm('Remove this shift and any assignments on it?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="shift" value="{{ shift.pk }}">
+                                    <button type="submit" class="text-sm text-red-700 hover:underline">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                No shifts yet. Add the first one above.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

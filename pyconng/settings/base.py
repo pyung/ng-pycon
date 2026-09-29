@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "conduct",
     "info",
     "blog",
+    "volunteers",
     # Not a feature: the frontend accessibility and performance audit, installed
     # so `manage.py audit_frontend` and its tests are available. Holds no models.
     "quality",
