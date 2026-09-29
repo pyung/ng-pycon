@@ -1,0 +1,27 @@
+{% extends "emails/_base.html" %}
+{% block title %}A place has opened up{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    A travel grant place has opened up for PyCon Nigeria {{ conference_year }}, and
+    you were next on the list. We are pleased to offer you
+    <strong>&#8358;{{ amount|floatformat:0 }}</strong>.
+  </p>
+  {% if deadline %}
+  <p style="margin:24px 0;padding:16px 20px;background:#f0f1f5;border-radius:8px;">
+    <strong>Please accept by {{ deadline|date:"j F Y" }}</strong>
+    {% if days_left %} &mdash; that is {{ days_left }} day{{ days_left|pluralize }} from now{% endif %}.
+    After that the offer expires and the money goes to the next person, so please
+    answer even if the answer is no.
+  </p>
+  {% endif %}
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Accept or decline</a>
+  </p>
+  <p>
+    If your plans have changed and you no longer need it, declining takes one click
+    and puts the money straight to somebody else. That is genuinely helpful, not a
+    disappointment.
+  </p>
+  <p>PyCon Nigeria Travel Grant Committee</p>
+{% endblock %}

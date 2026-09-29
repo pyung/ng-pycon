@@ -1,0 +1,20 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your travel grant offer has expired{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    Your PyCon Nigeria {{ conference_year }} travel grant offer expired on
+    {{ deadline|date:"j F Y" }} without a reply, so it has been released to somebody
+    on the waiting list.
+  </p>
+  <p>
+    If you did mean to accept and the email got away from you, write to us. We cannot
+    promise anything &mdash; the money may already be committed &mdash; but we would
+    rather know than not.
+  </p>
+  <p>
+    You are still very welcome at the conference. Tickets are on sale in the usual
+    way.
+  </p>
+  <p>PyCon Nigeria Travel Grant Committee</p>
+{% endblock %}

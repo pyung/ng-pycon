@@ -216,15 +216,19 @@ def eligible_speakers(year):
 
 
 def eligible_grant_recipients(year):
-    """Accounts whose travel grant was approved or already paid."""
+    """
+    Accounts whose travel grant they have accepted.
+
+    Not merely approved: an approval is now an offer with a deadline, and issuing a
+    free ticket for one nobody has answered gives away a seat that may be declined.
+    Accepting a grant issues the ticket on the spot, so this is the backfill for
+    grants decided before that existed.
+    """
     from grants.models import TravelGrantApplication
 
     applications = TravelGrantApplication.objects.filter(
         conference_year=year,
-        status__in=[
-            TravelGrantApplication.STATUS_APPROVED,
-            TravelGrantApplication.STATUS_PAID,
-        ],
+        status__in=TravelGrantApplication.PAYABLE_STATUSES,
     ).select_related("user")
     return list({a.user_id: a.user for a in applications if a.user_id}.values())
 

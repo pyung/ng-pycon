@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
 from editions.current import current_year
 
@@ -114,13 +114,154 @@ def grant_closed(request):
 
 @login_required
 def grant_my_application(request):
-    """Applicant dashboard - status, view, withdraw."""
+    """
+    Where an applicant sees where they stand, and answers an offer.
+
+    Everything that used to require an email now happens here: accept, decline, say
+    where the money should go, and send the receipt.
+    """
+    from . import offers, payouts
+    from .forms import GrantPayoutDetailsForm, GrantReceiptForm
+
     application = GrantService.get_user_application(request.user)
-    return render(request, "grants/my_application.html", {
+    context = {
         "application": application,
         "conference_year": current_year(),
         "grant_open": GrantService.is_grant_open(),
+    }
+    if application is not None:
+        payment = getattr(application, "payment", None)
+        context.update({
+            "payment": payment,
+            "ticket": offers.grant_ticket(application),
+            "payout_form": GrantPayoutDetailsForm(instance=application),
+            "receipt_form": GrantReceiptForm(),
+            "needs_payout_details": application.is_awarded and not application.has_payout_details,
+            "needs_receipt": bool(payment and payment.needs_receipt),
+        })
+    return render(request, "grants/my_application.html", context)
+
+
+@login_required
+@require_POST
+def grant_accept(request, application_id):
+    """The recipient says yes, which fixes the money and issues their ticket."""
+    from . import offers
+
+    application = get_object_or_404(
+        TravelGrantApplication, pk=application_id, user=request.user
+    )
+    try:
+        offers.accept(application, by=request.user)
+    except offers.OfferError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(
+            request,
+            "Your travel grant is confirmed, and your conference ticket has been "
+            "issued. Please add your bank details below so we can pay you.",
+        )
+    return redirect("grants:my_application")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def grant_decline(request, application_id):
+    """
+    The recipient says no, which releases the money to the waiting list.
+
+    A page of its own rather than a button, because it asks for a reason and because
+    it is irreversible — worth one deliberate step.
+    """
+    from . import offers
+    from .forms import GrantOfferResponseForm
+
+    application = get_object_or_404(
+        TravelGrantApplication, pk=application_id, user=request.user
+    )
+    if not application.can_decline:
+        messages.error(request, "There is no offer to decline.")
+        return redirect("grants:my_application")
+
+    if request.method == "POST":
+        form = GrantOfferResponseForm(request.POST)
+        if form.is_valid():
+            try:
+                _, promoted = offers.decline(
+                    application, by=request.user, reason=form.cleaned_data["reason"]
+                )
+            except offers.OfferError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(
+                    request,
+                    "Thank you for telling us. Your grant has been released"
+                    + (
+                        " and offered to somebody on the waiting list."
+                        if promoted
+                        else "."
+                    ),
+                )
+                return redirect("grants:my_application")
+    else:
+        form = GrantOfferResponseForm()
+
+    return render(request, "grants/decline.html", {
+        "application": application,
+        "form": form,
+        "conference_year": current_year(),
     })
+
+
+@login_required
+@require_POST
+def grant_payout_details(request, application_id):
+    """Record where to send the money."""
+    from . import payouts
+    from .forms import GrantPayoutDetailsForm
+
+    application = get_object_or_404(
+        TravelGrantApplication, pk=application_id, user=request.user
+    )
+    if not application.is_awarded:
+        messages.error(request, "There is nothing to pay out yet.")
+        return redirect("grants:my_application")
+
+    form = GrantPayoutDetailsForm(request.POST, instance=application)
+    if form.is_valid():
+        payouts.save_payout_details(application, form.cleaned_data, by=request.user)
+        messages.success(request, "Thank you — we have your payment details.")
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, error)
+    return redirect("grants:my_application")
+
+
+@login_required
+@require_POST
+def grant_upload_receipt(request, application_id):
+    """The recipient sends evidence of what they spent."""
+    from . import payouts
+    from .forms import GrantReceiptForm
+
+    application = get_object_or_404(
+        TravelGrantApplication, pk=application_id, user=request.user
+    )
+    form = GrantReceiptForm(request.POST, request.FILES)
+    if not form.is_valid():
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, error)
+        return redirect("grants:my_application")
+
+    try:
+        payouts.upload_receipt(application, form.cleaned_data["receipt"], by=request.user)
+    except payouts.PayoutError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Receipt received. Thank you.")
+    return redirect("grants:my_application")
 
 
 @login_required
@@ -156,15 +297,28 @@ def grant_withdraw(request, application_id):
 
 @grant_reviewer_required
 def grant_review_list(request):
-    """List applications assigned to this reviewer."""
+    """
+    Applications assigned to this reviewer, filterable by what was asked for.
+
+    The grant-type filter is the reason that field now exists. It used to be implied
+    by which cost boxes happened to be filled in, so a queue of forty could not be
+    split into "the flights" and "the hotel rooms" — which is how a panel actually
+    divides the work.
+    """
+    grant_type = request.GET.get("type") or ""
     assignments = (
         GrantReviewerAssignment.objects.filter(reviewer=request.user)
         .select_related("application__user")
         .prefetch_related("review")
         .order_by("-assigned_at")
     )
+    if grant_type:
+        assignments = assignments.filter(application__grant_type=grant_type)
+
     return render(request, "grants/review_list.html", {
         "assignments": assignments,
+        "grant_types": TravelGrantApplication.GRANT_TYPE_CHOICES,
+        "selected_type": grant_type,
         "conference_year": current_year(),
     })
 
@@ -331,11 +485,21 @@ def grant_admin_decisions(request):
                     approved_amounts[aid] = float(request.POST[key])
                 except (ValueError, TypeError):
                     pass
-        count = GrantService.bulk_decision(
+        count, refused = GrantService.bulk_decision(
             app_ids, decision, approved_amounts,
             actor_email=request.user.email, actor=request.user,
         )
-        messages.success(request, f"{count} application(s) updated.")
+        if count:
+            messages.success(request, f"{count} application(s) updated.")
+        # Reported per application rather than as one failure: a chair deciding
+        # twenty needs to know which three did not fit the budget.
+        for application, reason in refused:
+            messages.error(
+                request,
+                f"{application.user.get_full_name() or application.user.email}: {reason}",
+            )
+        if not count and not refused:
+            messages.info(request, "Nothing to update.")
     else:
         messages.error(request, "Invalid decision data.")
     return redirect("grants:admin_dashboard")
@@ -356,11 +520,17 @@ def grant_admin_export(request):
 
 @grant_finance_required
 def grant_finance_list(request):
-    """List approved grants for payment processing."""
+    """
+    Grants to pay: accepted ones, not merely approved ones.
+
+    Approved used to be the trigger, which stopped being right once an approval
+    became an offer somebody has to answer. Paying out an unanswered offer sends
+    money to somebody who may yet decline.
+    """
     applications = (
         TravelGrantApplication.objects.filter(
             conference_year=current_year(),
-            status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID],
+            status__in=TravelGrantApplication.PAYABLE_STATUSES,
         )
         .select_related("user")
         .prefetch_related("payment")
@@ -384,7 +554,7 @@ def grant_finance_detail(request, application_id):
         TravelGrantApplication,
         pk=application_id,
         conference_year=current_year(),
-        status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID],
+        status__in=TravelGrantApplication.PAYABLE_STATUSES,
     )
     payment, _ = TravelGrantPayment.objects.get_or_create(
         application=application,
@@ -437,3 +607,106 @@ def grant_finance_detail(request, application_id):
         "form": form,
         "conference_year": current_year(),
     })
+
+
+# ---------------------------------------------------------------------------
+# Chair and finance: the budget, the waitlist, and the reports
+# ---------------------------------------------------------------------------
+
+
+@grant_chair_required
+@require_POST
+def grant_promote_waitlist(request):
+    """
+    Offer whatever budget is free to the best-scored waitlisted applicants.
+
+    A deliberate action rather than something that happens quietly in the background:
+    it commits money, and a chair should see how much and to whom.
+    """
+    from . import offers
+
+    promoted = offers.promote_from_waitlist(current_year(), by=request.user)
+    if promoted:
+        names = ", ".join(a.user.get_full_name() or a.user.email for a in promoted)
+        messages.success(
+            request,
+            f"{len(promoted)} offer(s) made from the waiting list: {names}. "
+            f"Each has its own acceptance deadline.",
+        )
+    else:
+        messages.info(
+            request,
+            "Nothing to promote. Either the waiting list is empty, the remaining "
+            "budget does not cover anybody on it, or automatic promotion is off for "
+            "this edition.",
+        )
+    return redirect("grants:admin_dashboard")
+
+
+@grant_chair_required
+@require_POST
+def grant_expire_offers(request):
+    """Lapse every offer past its deadline, releasing the money."""
+    from . import offers
+
+    lapsed, promoted = offers.expire_overdue(current_year(), by=request.user)
+    if lapsed:
+        messages.success(
+            request,
+            f"{len(lapsed)} offer(s) lapsed and their budget released."
+            + (f" {len(promoted)} new offer(s) made from the waiting list." if promoted else ""),
+        )
+    else:
+        messages.info(request, "No offers are past their deadline.")
+    return redirect("grants:admin_dashboard")
+
+
+@grant_chair_required
+def grant_reports(request):
+    """
+    The breakdowns sponsors and the PSF ask for.
+
+    Gender is shown here and nowhere else in the module: a breakdown for a funder is a
+    legitimate use, and a reviewer seeing it while deciding is not.
+    """
+    from . import reporting
+
+    year = current_year()
+    return render(request, "grants/reports.html", {
+        "report": reporting.summary(year),
+        "conference_year": year,
+    })
+
+
+@grant_chair_required
+def grant_reports_export(request):
+    """The same breakdowns as a CSV."""
+    from . import reporting
+
+    year = current_year()
+    response = HttpResponse(reporting.to_csv(year), content_type="text/csv")
+    response["Content-Disposition"] = (
+        f'attachment; filename="pyconng-{year}-grant-report.csv"'
+    )
+    return response
+
+
+@grant_finance_required
+@require_POST
+def grant_verify_receipt(request, application_id):
+    """Finance confirms a receipt matches what was paid."""
+    from . import payouts
+
+    application = get_object_or_404(
+        TravelGrantApplication, pk=application_id, conference_year=current_year()
+    )
+    try:
+        payouts.verify_receipt(application, by=request.user)
+    except payouts.PayoutError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(
+            request,
+            f"Receipt verified for {application.user.get_full_name() or application.user.email}.",
+        )
+    return redirect("grants:finance_detail", application_id=application.pk)

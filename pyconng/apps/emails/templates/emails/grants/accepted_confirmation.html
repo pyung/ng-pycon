@@ -1,0 +1,24 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your travel grant is confirmed{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    Your PyCon Nigeria {{ conference_year }} travel grant of
+    <strong>&#8358;{{ amount|floatformat:0 }}</strong> is confirmed. We are glad you
+    are coming.
+  </p>
+  <p>
+    <strong>Your ticket is sorted.</strong> A grant ticket has been issued to this
+    account &mdash; there is nothing to pay and nothing to do. It carries a QR code
+    for the door like any other.
+  </p>
+  <p>Two things we need from you when you have a moment:</p>
+  <ol>
+    <li><strong>Where to send the money.</strong> Add your bank details on your grant page.</li>
+    <li><strong>Receipts, if this is a reimbursement.</strong> You can upload them on the same page once you have them.</li>
+  </ol>
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Your grant page</a>
+  </p>
+  <p>See you there,<br>PyCon Nigeria Travel Grant Committee</p>
+{% endblock %}

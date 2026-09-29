@@ -1,0 +1,14 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+Your PyCon Nigeria {{ conference_year }} travel grant offer expired on
+{{ deadline|date:"j F Y" }} without a reply, so it has been released to somebody on
+the waiting list.
+
+If you did mean to accept and the email got away from you, write to us. We cannot
+promise anything - the money may already be committed - but we would rather know
+than not.
+
+You are still very welcome at the conference. Tickets are on sale in the usual way.
+
+PyCon Nigeria Travel Grant Committee
+{% endblock %}

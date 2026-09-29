@@ -1,14 +1,34 @@
 {% extends "emails/_base.html" %}
-{% block title %}Travel grant approved{% endblock %}
+{% block title %}Your travel grant has been approved{% endblock %}
 {% block content %}
   <p>Hi {{ applicant_name }},</p>
-  <p>Great news — your PyCon Nigeria {{ conference_year }} travel grant has been <strong>approved</strong>.</p>
-  <p style="font-size:18px;margin:16px 0;"><strong>Approved amount:</strong> {{ approved_amount }}</p>
+  <p>
+    Good news &mdash; your PyCon Nigeria {{ conference_year }} travel grant
+    application has been approved.
+  </p>
+  <p style="font-size:20px;font-weight:600;margin:24px 0 4px;">
+    &#8358;{{ approved_amount|floatformat:0 }}
+  </p>
+  <p style="color:#6b7280;margin:0 0 24px;">Approved amount</p>
+  {% if decision_note %}
+  <p>{{ decision_note }}</p>
+  {% endif %}
+  {% if deadline %}
+  <p style="margin:24px 0;padding:16px 20px;background:#f0f1f5;border-radius:8px;">
+    <strong>This is an offer, and we need you to confirm it.</strong>
+    Please accept by {{ deadline|date:"j F Y" }}{% if days_left %} &mdash;
+    {{ days_left }} day{{ days_left|pluralize }} from now{% endif %}. After that the
+    offer expires and the money goes to somebody on the waiting list, so please
+    answer even if the answer is no.
+  </p>
+  {% endif %}
   <p style="margin:24px 0;">
-    <a href="{{ dashboard_url }}"
-       style="display:inline-block;background:#1a3a8f;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
-      View payment details
-    </a>
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Accept or decline</a>
+  </p>
+  <p>
+    If your plans have changed and you no longer need it, declining takes one click
+    and puts the money straight to somebody else. That is genuinely helpful, not a
+    disappointment.
   </p>
   <p>Congratulations, and welcome to PyCon Nigeria.</p>
 {% endblock %}

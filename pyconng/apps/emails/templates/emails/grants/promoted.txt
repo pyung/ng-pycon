@@ -1,0 +1,17 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+A travel grant place has opened up for PyCon Nigeria {{ conference_year }}, and you
+were next on the list. We are pleased to offer you {{ amount }}.
+{% if deadline %}
+Please accept by {{ deadline|date:"j F Y" }}{% if days_left %} - that is {{ days_left }} day{{ days_left|pluralize }} from now{% endif %}.
+After that the offer expires and the money goes to the next person, so please answer
+even if the answer is no.
+{% endif %}
+Accept or decline: {{ dashboard_url }}
+
+If your plans have changed and you no longer need it, declining takes one click and
+puts the money straight to somebody else. That is genuinely helpful, not a
+disappointment.
+
+PyCon Nigeria Travel Grant Committee
+{% endblock %}

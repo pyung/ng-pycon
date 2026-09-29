@@ -1,0 +1,28 @@
+{% load humanize %}
+<div class="mt-3 overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
+    <table class="w-full text-sm">
+        <caption class="sr-only">{{ caption }}</caption>
+        <thead>
+            <tr class="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200">
+                <th scope="col" class="px-4 py-3">Group</th>
+                <th scope="col" class="px-4 py-3 text-right">Grants</th>
+                <th scope="col" class="px-4 py-3 text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="border-b border-gray-100 last:border-0">
+                <th scope="row" class="px-4 py-3 text-left font-medium text-gray-900">{{ row.label }}</th>
+                <td class="px-4 py-3 text-right text-gray-700">{{ row.count }}</td>
+                <td class="px-4 py-3 text-right text-gray-700">&#8358;{{ row.amount|floatformat:0|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="px-4 py-6 text-center text-gray-500">
+                    No grants awarded yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

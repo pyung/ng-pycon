@@ -27,6 +27,10 @@ class GrantSettingsAdmin(ModelAdmin):
         "application_deadline",
         "max_grant_budget",
         "max_per_applicant",
+        # Visible at a glance because both change how money moves: how long a
+        # recipient has to answer, and whether freed budget re-offers itself.
+        "acceptance_days",
+        "auto_promote_waitlist",
     ]
     list_filter = ["status"]
     ordering = ["-conference_year"]

@@ -1,11 +1,21 @@
 {% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
 
-Great news — your PyCon Nigeria {{ conference_year }} travel grant has been approved.
+Good news - your PyCon Nigeria {{ conference_year }} travel grant application has
+been approved.
 
 Approved amount: {{ approved_amount }}
+{% if decision_note %}
+{{ decision_note }}
+{% endif %}{% if deadline %}
+This is an offer, and we need you to confirm it. Please accept by
+{{ deadline|date:"j F Y" }}{% if days_left %} - that is {{ days_left }} day{{ days_left|pluralize }} from now{% endif %}.
+After that the offer expires and the money goes to somebody on the waiting list, so
+please answer even if the answer is no.
+{% endif %}
+Accept or decline: {{ dashboard_url }}
 
-You can view payment details and next steps in your dashboard:
-{{ dashboard_url }}
+If your plans have changed and you no longer need it, declining takes one click and
+puts the money straight to somebody else. That is genuinely helpful.
 
 Congratulations, and welcome to PyCon Nigeria.
 {% endblock %}

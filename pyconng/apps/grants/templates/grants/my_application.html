@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}My Travel Grant{% endblock %}
 
@@ -92,26 +92,200 @@
                         {% endif %}
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Funding requested</dt>
-                            <dd class="text-gray-900 font-semibold">₦{{ application.total_requested|floatformat:2 }}</dd>
+                            <dd class="text-gray-900 font-semibold">₦{{ application.total_requested|floatformat:0|intcomma }}</dd>
                         </div>
                         {% if application.approved_amount %}
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Approved amount</dt>
-                            <dd class="text-gray-900 font-semibold">₦{{ application.approved_amount|floatformat:2 }}</dd>
+                            <dd class="text-gray-900 font-semibold">₦{{ application.approved_amount|floatformat:0|intcomma }}</dd>
                         </div>
                         {% endif %}
                     </dl>
 
-                    {% if application.status == 'approved' %}
-                    <div class="mt-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
-                        <h3 class="font-semibold text-teal-900 mb-2">Next steps</h3>
-                        <p class="text-sm text-teal-800">
-                            You will receive further instructions via email. If you need to upload reimbursement details,
-                            please follow the link provided in the approval email.
+                    {% comment %}An approval is an offer until they answer it. This
+                    panel used to say "you will receive further instructions via
+                    email", which is where the whole flow stalled.{% endcomment %}
+                    {% if application.awaiting_acceptance %}
+                    <div class="mt-6 p-5 bg-teal-50 border border-teal-200 rounded-lg">
+                        <h2 class="font-semibold text-teal-900">Please confirm your grant</h2>
+                        <p class="mt-1 text-sm text-teal-900">
+                            We have offered you
+                            <strong>&#8358;{{ application.approved_amount|floatformat:0|intcomma }}</strong>.
+                            {% if application.acceptance_deadline %}
+                            Please answer by
+                            <strong>{{ application.acceptance_deadline|date:"j F Y" }}</strong>{% if application.days_left_to_accept %} &mdash;
+                            {{ application.days_left_to_accept }} day{{ application.days_left_to_accept|pluralize }} from now{% endif %}.
+                            After that the offer expires and the money goes to somebody
+                            on the waiting list.
+                            {% endif %}
+                        </p>
+                        {% if application.decision_note %}
+                        <p class="mt-2 text-sm text-teal-900">{{ application.decision_note }}</p>
+                        {% endif %}
+
+                        {% if application.can_accept %}
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <form method="post" action="{% url 'grants:accept' application.pk %}">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg">
+                                    Accept this grant
+                                </button>
+                            </form>
+                            <a href="{% url 'grants:decline' application.pk %}"
+                               class="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-white">
+                                I no longer need it
+                            </a>
+                        </div>
+                        <p class="mt-3 text-xs text-teal-900">
+                            If your plans have changed, declining takes one click and puts
+                            the money straight to somebody else. That is genuinely helpful.
+                        </p>
+                        {% else %}
+                        <p class="mt-4 text-sm font-semibold text-red-800">
+                            The deadline for accepting has passed. Please write to us
+                            &mdash; we cannot promise anything, but we would rather know.
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if application.status == 'lapsed' %}
+                    <div class="mt-6 p-4 bg-gray-100 border border-gray-200 rounded-lg">
+                        <h2 class="font-semibold text-gray-900">This offer expired</h2>
+                        <p class="mt-1 text-sm text-gray-700">
+                            It was not confirmed by
+                            {{ application.acceptance_deadline|date:"j F Y" }}, so it was
+                            released to somebody on the waiting list. You are still very
+                            welcome at the conference.
                         </p>
                     </div>
                     {% endif %}
+
+                    {% if ticket %}
+                    <div class="mt-6 p-4 bg-white border border-gray-200 rounded-lg">
+                        <h2 class="font-semibold text-gray-900">Your ticket</h2>
+                        <p class="mt-1 text-sm text-gray-600">
+                            Issued with your grant &mdash; nothing to pay.
+                            Order <span class="font-mono">{{ ticket.order }}</span>.
+                        </p>
+                        <a href="{% url 'tickets:detail' order=ticket.order %}"
+                           class="mt-3 inline-block px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg">
+                            Open your ticket and QR code
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
+
+                {% if application.is_awarded %}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
+                    <h2 class="text-lg font-bold text-gray-900">Where should we send the money?</h2>
+                    {% if needs_payout_details %}
+                    <p class="mt-1 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
+                        We cannot pay you until these are filled in.
+                    </p>
+                    {% else %}
+                    <p class="mt-1 text-sm text-gray-600">
+                        We have your details. Change them here if anything is wrong.
+                    </p>
+                    {% endif %}
+                    <form method="post" action="{% url 'grants:payout_details' application.pk %}"
+                          class="mt-4 grid gap-4 sm:grid-cols-2">
+                        {% csrf_token %}
+                        {% for field in payout_form %}
+                        <div{% if field.name == "payout_notes" %} class="sm:col-span-2"{% endif %}>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        <div class="sm:col-span-2">
+                            <button type="submit"
+                                    class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg">
+                                Save payment details
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
+                    <h2 class="text-lg font-bold text-gray-900">Payment</h2>
+                    {% if payment %}
+                    <dl class="mt-3 grid gap-4 sm:grid-cols-2 text-sm">
+                        <div>
+                            <dt class="font-medium text-gray-500">Status</dt>
+                            <dd class="text-gray-900">{{ payment.get_payment_status_display }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-gray-500">Amount</dt>
+                            <dd class="text-gray-900">&#8358;{{ payment.amount_paid|floatformat:0|intcomma }}</dd>
+                        </div>
+                        {% if payment.paid_at %}
+                        <div>
+                            <dt class="font-medium text-gray-500">Paid</dt>
+                            <dd class="text-gray-900">{{ payment.paid_at|date:"j F Y" }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if payment.reference %}
+                        <div>
+                            <dt class="font-medium text-gray-500">Reference</dt>
+                            <dd class="text-gray-900 font-mono">{{ payment.reference }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                    {% else %}
+                    <p class="mt-2 text-sm text-gray-600">Nothing has been paid out yet.</p>
+                    {% endif %}
+
+                    {% comment %}The receipt belongs to whoever paid, so a recipient
+                    can upload it. Before this only finance could, which meant it
+                    arrived as an email attachment somebody had to remember to file.{% endcomment %}
+                    <div class="mt-5 pt-5 border-t border-gray-100">
+                        <h3 class="font-semibold text-gray-900">Receipt</h3>
+                        {% if payment.receipt %}
+                        <p class="mt-1 text-sm text-gray-600">
+                            Received{% if payment.receipt_uploaded_at %} on {{ payment.receipt_uploaded_at|date:"j F Y" }}{% endif %}.
+                            {% if payment.is_verified %}
+                            <span class="font-semibold text-green-700">Verified.</span>
+                            {% endif %}
+                        </p>
+                        {% elif needs_receipt %}
+                        <p class="mt-1 text-sm text-amber-800">
+                            We still need a receipt for this reimbursement.
+                        </p>
+                        {% else %}
+                        <p class="mt-1 text-sm text-gray-600">
+                            You can upload one here when you have it.
+                        </p>
+                        {% endif %}
+
+                        {% if not payment.is_verified %}
+                        <form method="post" action="{% url 'grants:upload_receipt' application.pk %}"
+                              enctype="multipart/form-data" class="mt-3 flex flex-wrap items-end gap-3">
+                            {% csrf_token %}
+                            <div class="grow min-w-[16rem]">
+                                <label for="{{ receipt_form.receipt.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                    {{ receipt_form.receipt.label }}
+                                </label>
+                                {{ receipt_form.receipt }}
+                                <p class="mt-1 text-xs text-gray-500">{{ receipt_form.receipt.help_text }}</p>
+                            </div>
+                            <button type="submit"
+                                    class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 font-semibold rounded-lg">
+                                Upload
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
 
                 <div class="flex gap-3">
                     <a href="{% url 'grants:landing' %}"

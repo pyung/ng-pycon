@@ -1,0 +1,19 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+Your PyCon Nigeria {{ conference_year }} travel grant of {{ amount }} is confirmed.
+We are glad you are coming.
+
+Your ticket is sorted. A grant ticket has been issued to this account - there is
+nothing to pay and nothing to do. It carries a QR code for the door like any other.
+
+Two things we need from you when you have a moment:
+
+1. Where to send the money. Add your bank details on your grant page.
+2. Receipts, if this is a reimbursement. You can upload them on the same page once
+   you have them.
+
+Your grant page: {{ dashboard_url }}
+
+See you there,
+PyCon Nigeria Travel Grant Committee
+{% endblock %}

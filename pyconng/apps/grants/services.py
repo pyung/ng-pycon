@@ -108,9 +108,31 @@ class GrantService:
         stats["total_funds_requested"] = total_requested or 0
 
         total_approved = qs.filter(
-            status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID]
+            status__in=TravelGrantApplication.COMMITTED_STATUSES
         ).aggregate(total=Sum("approved_amount"))["total"]
         stats["total_funds_approved"] = total_approved or 0
+
+        # The offer lifecycle, and the budget figure the dashboard never had.
+        stats["accepted"] = qs.filter(status=TravelGrantApplication.STATUS_ACCEPTED).count()
+        stats["declined"] = qs.filter(status=TravelGrantApplication.STATUS_DECLINED).count()
+        stats["lapsed"] = qs.filter(status=TravelGrantApplication.STATUS_LAPSED).count()
+        stats["paid"] = qs.filter(status=TravelGrantApplication.STATUS_PAID).count()
+        stats["awaiting_acceptance"] = qs.filter(
+            status__in=TravelGrantApplication.AWAITING_ACCEPTANCE_STATUSES
+        ).count()
+        stats["offers_expiring"] = sum(
+            1
+            for a in qs.filter(
+                status__in=TravelGrantApplication.AWAITING_ACCEPTANCE_STATUSES,
+                acceptance_deadline__isnull=False,
+            )
+            if (a.days_left_to_accept or 0) <= 3
+        )
+
+        from . import budget as budget_module
+
+        stats["budget"] = budget_module.status(current_year())
+        stats["promotable"] = len(budget_module.affordable_waitlisted(current_year()))
         return stats
 
     @staticmethod
@@ -152,14 +174,23 @@ class GrantService:
     @staticmethod
     def bulk_decision(application_ids, decision, approved_amounts=None, actor_email="", actor=None):
         """
-        Bulk approve / reject / waitlist. approved_amounts: {app_id: amount}.
+        Bulk approve, reject or waitlist. ``approved_amounts`` is ``{app_id: amount}``.
 
-        Every decision is recorded on the audit trail -- this is the module the
-        audit requirement singles out, because these decisions move money.
+        Returns ``(count, refused)``, where ``refused`` is a list of
+        ``(application, reason)`` the budget would not allow. Refusing per row rather
+        than raising matters here: a chair deciding twenty applications needs to know
+        which three did not fit, not to have the whole action fail on the first.
+
+        Approving now makes an *offer* with an acceptance deadline rather than a
+        finished award, and every amount is checked against the budget. Before this,
+        ``max_grant_budget`` was stored, displayed and never consulted, so a bulk
+        approval could overspend in silence.
         """
         from audit.services import record
-        from .models import TravelGrantPayment
         from grants.emails import send_grant_decision
+
+        from . import offers
+        from .budget import BudgetError
 
         status_map = {
             "approve": TravelGrantApplication.STATUS_APPROVED,
@@ -168,26 +199,32 @@ class GrantService:
         }
         # Spelled out rather than derived: "waitlist" + "d" reads "Waitlistd".
         action_labels = {
-            "approve": "Approved travel grant",
             "reject": "Rejected travel grant",
             "waitlist": "Waitlisted travel grant",
         }
         new_status = status_map.get(decision)
         if not new_status:
-            return 0
+            return 0, []
         approved_amounts = approved_amounts or {}
         count = 0
+        refused = []
+
         for app in TravelGrantApplication.objects.filter(pk__in=application_ids):
+            if decision == "approve":
+                amount = approved_amounts.get(
+                    str(app.pk), app.approved_amount or app.total_requested
+                )
+                try:
+                    offers.make_offer(app, amount, by=actor)
+                except BudgetError as exc:
+                    refused.append((app, str(exc)))
+                    continue
+                count += 1
+                continue
+
             previous_status = app.status
             app.status = new_status
             app.decision_at = timezone.now()
-            if new_status == TravelGrantApplication.STATUS_APPROVED:
-                amount = approved_amounts.get(str(app.pk), app.approved_amount or app.total_requested)
-                app.approved_amount = amount
-                TravelGrantPayment.objects.get_or_create(
-                    application=app,
-                    defaults={"amount_paid": amount, "payment_status": TravelGrantPayment.STATUS_PENDING},
-                )
             app.save()
 
             record(
@@ -197,54 +234,70 @@ class GrantService:
                 actor_label="" if getattr(actor, "pk", None) else (actor_email or "system"),
                 old_value=previous_status,
                 new_value=new_status,
-                note=(
-                    f"Amount: {app.approved_amount}"
-                    if new_status == TravelGrantApplication.STATUS_APPROVED
-                    else ""
-                ),
             )
-
             send_grant_decision(app)
             count += 1
-        return count
+
+        return count, refused
 
     @staticmethod
     def export_approved_grants(fmt="csv"):
-        """Export approved grants as CSV."""
+        """
+        Export the grants that cost money, for finance and for sponsor reports.
+
+        Covers accepted and paid rather than approved: an unanswered offer may lapse,
+        and exporting it as a grant given produces a figure that quietly goes wrong.
+        Carries the grant type, city and gender the reports need, and the payout
+        details finance needs, which were all absent before.
+        """
         applications = TravelGrantApplication.objects.filter(
             conference_year=current_year(),
-            status__in=[TravelGrantApplication.STATUS_APPROVED, TravelGrantApplication.STATUS_PAID],
-        ).select_related("user").order_by("user__email")
+            status__in=[
+                TravelGrantApplication.STATUS_ACCEPTED,
+                TravelGrantApplication.STATUS_PAID,
+            ],
+        ).select_related("user", "payment").order_by("user__email")
 
-        if fmt == "json":
-            import json
-            data = [
-                {
-                    "id": str(a.pk),
-                    "applicant": a.user.get_full_name() or a.user.email,
-                    "email": a.user.email,
-                    "country": a.country_of_residence,
-                    "requested": str(a.total_requested),
-                    "approved": str(a.approved_amount or ""),
-                    "status": a.status,
-                }
-                for a in applications
-            ]
-            return json.dumps(data, indent=2)
+        columns = [
+            "ID", "Applicant", "Email", "Grant type", "City", "Country", "Gender",
+            "Speaking", "First time", "Requested", "Approved", "Status",
+            "Accepted at", "Payment status", "Receipt",
+        ]
 
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "ID", "Applicant", "Email", "Country", "Requested", "Approved", "Status",
-        ])
-        for a in applications:
-            writer.writerow([
+        def row_for(a):
+            payment = getattr(a, "payment", None)
+            return [
                 str(a.pk),
                 a.user.get_full_name() or a.user.email,
                 a.user.email,
+                a.get_grant_type_display(),
+                a.city,
                 a.country_of_residence,
+                a.gender_display,
+                "yes" if a.is_speaking else "no",
+                "yes" if a.first_time_pycon else "no",
                 a.total_requested,
                 a.approved_amount or "",
-                a.status,
-            ])
+                a.get_status_display(),
+                a.accepted_at.date() if a.accepted_at else "",
+                payment.get_payment_status_display() if payment else "",
+                "yes" if payment and payment.receipt else "no",
+            ]
+
+        if fmt == "json":
+            import json
+
+            return json.dumps(
+                [
+                    dict(zip(columns, [str(value) for value in row_for(a)]))
+                    for a in applications
+                ],
+                indent=2,
+            )
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(columns)
+        for a in applications:
+            writer.writerow(row_for(a))
         return output.getvalue()

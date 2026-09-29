@@ -1,0 +1,12 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+A reminder that your PyCon Nigeria {{ conference_year }} travel grant offer of
+{{ amount }} expires on {{ deadline|date:"j F Y" }}{% if days_left %}, which is {{ days_left }} day{{ days_left|pluralize }} away{% endif %}.
+
+Accept or decline: {{ dashboard_url }}
+
+Either answer helps us. Declining releases the money to the next person on the list
+while there is still time for them to book travel.
+
+PyCon Nigeria Travel Grant Committee
+{% endblock %}

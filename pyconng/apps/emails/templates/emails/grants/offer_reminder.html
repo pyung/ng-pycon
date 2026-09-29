@@ -1,0 +1,19 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your travel grant offer expires soon{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    A reminder that your PyCon Nigeria {{ conference_year }} travel grant offer of
+    <strong>&#8358;{{ amount|floatformat:0 }}</strong> expires on
+    <strong>{{ deadline|date:"j F Y" }}</strong>{% if days_left %},
+    which is {{ days_left }} day{{ days_left|pluralize }} away{% endif %}.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ dashboard_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Accept or decline</a>
+  </p>
+  <p>
+    Either answer helps us. Declining releases the money to the next person on the
+    list while there is still time for them to book travel.
+  </p>
+  <p>PyCon Nigeria Travel Grant Committee</p>
+{% endblock %}

@@ -33,8 +33,12 @@ class TravelGrantApplicationForm(forms.ModelForm):
     class Meta:
         model = TravelGrantApplication
         fields = [
+            "grant_type",
+            "is_speaking",
             "country_of_residence",
             "city",
+            "gender",
+            "gender_self_described",
             "passport_required",
             "first_time_pycon",
             "community_involvement",
@@ -50,7 +54,35 @@ class TravelGrantApplicationForm(forms.ModelForm):
             "confirm_accurate",
             "agree_to_refund",
         ]
+        labels = {
+            "grant_type": "What are you asking for?",
+            "is_speaking": "I am also speaking at this conference",
+            "gender": "Gender (optional)",
+            "gender_self_described": "How would you describe it?",
+        }
+        help_texts = {
+            "grant_type": (
+                "Pick the one that matches your costs below. It is used to filter the "
+                "review queue and to report how the money was spent."
+            ),
+            "is_speaking": (
+                "Tick if you have a talk accepted or submitted. It does not decide "
+                "anything on its own — it tells the panel what else you have on."
+            ),
+            "gender": (
+                "Optional, and it plays no part in any decision. We are asked for the "
+                "breakdown by the sponsors and the Python Software Foundation who fund "
+                "these grants, and we cannot report what we never asked."
+            ),
+        }
         widgets = {
+            "grant_type": forms.Select(attrs={"class": TAILWIND_SELECT}),
+            "is_speaking": forms.CheckboxInput(attrs={"class": TAILWIND_CHECKBOX}),
+            "gender": forms.Select(attrs={"class": TAILWIND_SELECT}),
+            "gender_self_described": forms.TextInput(attrs={
+                "class": TAILWIND_INPUT,
+                "placeholder": "In your own words",
+            }),
             "country_of_residence": forms.TextInput(attrs={
                 "class": TAILWIND_INPUT,
                 "placeholder": "e.g. Nigeria",
@@ -107,6 +139,13 @@ class TravelGrantApplicationForm(forms.ModelForm):
     def __init__(self, *args, submit_action=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.submit_action = submit_action
+        # Nobody should have to state a gender to be considered for a grant.
+        self.fields["gender"].required = False
+        self.fields["gender"].choices = [("", "Prefer not to say")] + [
+            choice
+            for choice in TravelGrantApplication.GENDER_CHOICES
+            if choice[0] != TravelGrantApplication.GENDER_UNDISCLOSED
+        ]
 
     def clean(self):
         data = super().clean()
@@ -115,6 +154,44 @@ class TravelGrantApplicationForm(forms.ModelForm):
                 self.add_error("confirm_accurate", "You must confirm the information is accurate.")
             if not data.get("agree_to_refund"):
                 self.add_error("agree_to_refund", "You must agree to refund if information is misrepresented.")
+
+        # The costs and the grant type have to agree, because the type is what the
+        # review queue filters on and the reports report. Caught here rather than
+        # left to a reviewer noticing.
+        grant_type = data.get("grant_type")
+        transport = data.get("estimated_transport_cost") or 0
+        accommodation = data.get("estimated_accommodation_cost") or 0
+        if self.submit_action and grant_type:
+            if grant_type == TravelGrantApplication.GRANT_TYPE_TRAVEL and not transport:
+                self.add_error(
+                    "estimated_transport_cost",
+                    "You asked for travel only, so please give a transport estimate.",
+                )
+            if (
+                grant_type == TravelGrantApplication.GRANT_TYPE_ACCOMMODATION
+                and not accommodation
+            ):
+                self.add_error(
+                    "estimated_accommodation_cost",
+                    "You asked for accommodation only, so please give an accommodation estimate.",
+                )
+            if grant_type == TravelGrantApplication.GRANT_TYPE_BOTH and not (
+                transport and accommodation
+            ):
+                self.add_error(
+                    "grant_type",
+                    "You asked for both, but only one estimate is filled in. Change the "
+                    "type or add the other estimate.",
+                )
+
+        if (
+            data.get("gender") == TravelGrantApplication.GENDER_SELF_DESCRIBE
+            and not (data.get("gender_self_described") or "").strip()
+        ):
+            self.add_error(
+                "gender_self_described",
+                "Add a description, or choose one of the other options.",
+            )
         return data
 
 class GrantReviewForm(forms.Form):
@@ -193,3 +270,94 @@ class GrantPaymentForm(forms.Form):
         widget=forms.TextInput(attrs={"class": TAILWIND_INPUT, "placeholder": "Transaction reference"}),
     )
     receipt = forms.FileField(required=False)
+
+
+class GrantOfferResponseForm(forms.Form):
+    """
+    The recipient answering an offer.
+
+    A decline asks for a reason and does not require one. It is worth asking because
+    the answers are actionable -- "the amount would not cover the flight" is a
+    different problem from "I can no longer come" -- and worth not requiring because
+    somebody withdrawing should not have to justify it.
+    """
+
+    reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"class": TAILWIND_TEXTAREA, "rows": 3}),
+        label="Anything you would like to tell us? (optional)",
+        help_text=(
+            "If the amount was not enough, or your plans changed, saying so helps us "
+            "set these better next year."
+        ),
+    )
+
+
+class GrantPayoutDetailsForm(forms.ModelForm):
+    """Where to send the money, filled in by the recipient."""
+
+    class Meta:
+        model = TravelGrantApplication
+        fields = ["payout_method", "bank_name", "account_name", "account_number", "payout_notes"]
+        labels = {
+            "payout_method": "How should we send it?",
+            "bank_name": "Bank",
+            "account_name": "Account name",
+            "account_number": "Account number",
+            "payout_notes": "Anything else we need to know",
+        }
+        help_texts = {
+            "account_name": "Exactly as your bank holds it, or the transfer will bounce.",
+            "payout_notes": "Optional. A sort code, a different currency, a preferred date.",
+        }
+        widgets = {
+            "payout_method": forms.Select(attrs={"class": TAILWIND_SELECT}),
+            "bank_name": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "account_name": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "account_number": forms.TextInput(attrs={"class": TAILWIND_INPUT}),
+            "payout_notes": forms.Textarea(attrs={"class": TAILWIND_TEXTAREA, "rows": 2}),
+        }
+
+    def clean(self):
+        data = super().clean()
+        if data.get("payout_method") == TravelGrantApplication.PAYOUT_BANK_TRANSFER:
+            for field, label in (
+                ("bank_name", "bank"),
+                ("account_name", "account name"),
+                ("account_number", "account number"),
+            ):
+                if not (data.get(field) or "").strip():
+                    self.add_error(field, f"A bank transfer needs the {label}.")
+        return data
+
+
+class GrantReceiptForm(forms.Form):
+    """A recipient uploading evidence of what they spent."""
+
+    receipt = forms.FileField(
+        label="Receipt",
+        help_text=(
+            "A photo or a PDF is fine. One file — if you have several, combine "
+            "them or send the rest to us by email."
+        ),
+        widget=forms.ClearableFileInput(attrs={"class": TAILWIND_INPUT}),
+    )
+
+    #: Big enough for a phone photo of a boarding pass, small enough that nobody
+    #: uploads a video by accident.
+    MAX_BYTES = 8 * 1024 * 1024
+    ALLOWED_SUFFIXES = (".pdf", ".png", ".jpg", ".jpeg", ".heic", ".webp")
+
+    def clean_receipt(self):
+        receipt = self.cleaned_data["receipt"]
+        name = (receipt.name or "").lower()
+        if not name.endswith(self.ALLOWED_SUFFIXES):
+            raise forms.ValidationError(
+                "Upload a PDF or a photo (" + ", ".join(self.ALLOWED_SUFFIXES) + ")."
+            )
+        if receipt.size > self.MAX_BYTES:
+            raise forms.ValidationError(
+                f"That file is {receipt.size / 1024 / 1024:.1f} MB. Please keep it "
+                f"under {self.MAX_BYTES // 1024 // 1024} MB."
+            )
+        return receipt

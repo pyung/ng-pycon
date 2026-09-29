@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Payment - {{ application.user.get_full_name|default:application.user.email }}{% endblock %}
 
@@ -13,10 +13,12 @@
                 ← Back to Payment List
             </a>
 
+            {% include "grants/includes/_messages.html" %}
+
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
                 <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ application.user.get_full_name|default:application.user.email }}</h1>
                 <p class="text-gray-500 text-sm mb-4">{{ application.user.email }}</p>
-                <p class="text-lg font-semibold text-teal-600">Approved: ₦{{ application.approved_amount|floatformat:2|default:application.total_requested }}</p>
+                <p class="text-lg font-semibold text-teal-600">Approved: ₦{{ application.approved_amount|floatformat:0|intcomma }}</p>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
@@ -45,6 +47,45 @@
                         Save
                     </button>
                 </form>
+
+                {% comment %}Verifying is a separate act from paying, because they are
+                separate facts: money leaving an account and money being accounted
+                for. Collapsing them means the second never happens.{% endcomment %}
+                <div class="mt-6 pt-6 border-t border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Receipt</h3>
+                    {% if application.payment.receipt %}
+                    <p class="mt-1 text-sm text-gray-600">
+                        <a href="{{ application.payment.receipt.url }}" class="text-teal-700 hover:underline"
+                           target="_blank" rel="noopener noreferrer">
+                            Open the receipt<span class="sr-only"> (opens in a new tab)</span>
+                        </a>
+                        {% if application.payment.receipt_uploaded_at %}
+                        &middot; uploaded {{ application.payment.receipt_uploaded_at|date:"j F Y" }}
+                        {% endif %}
+                    </p>
+                    {% else %}
+                    <p class="mt-1 text-sm text-gray-500">
+                        No receipt yet. The recipient can upload one from their grant page.
+                    </p>
+                    {% endif %}
+
+                    {% if application.payment.is_verified %}
+                    <p class="mt-3 text-sm font-semibold text-green-700">
+                        Verified {{ application.payment.receipt_verified_at|date:"j F Y" }}
+                        {% if application.payment.receipt_verified_by %}
+                        by {{ application.payment.receipt_verified_by.get_full_name|default:application.payment.receipt_verified_by.email }}
+                        {% endif %}
+                    </p>
+                    {% elif application.payment.can_verify %}
+                    <form method="post" action="{% url 'grants:verify_receipt' application.pk %}" class="mt-3">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-lg">
+                            Verify this receipt
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
             </div>
 
         </div>

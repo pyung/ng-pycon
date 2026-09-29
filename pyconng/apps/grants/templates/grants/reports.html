@@ -1,0 +1,77 @@
+{% extends base_template %}
+{% load humanize %}
+
+{% block title %}Travel grant report{% endblock %}
+{% block body_class %}template-grant-reports{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 py-12">
+        <div class="max-w-4xl mx-auto">
+            <a href="{% url 'grants:admin_dashboard' %}" class="text-sm text-teal-700 hover:underline">
+                &larr; Grant dashboard
+            </a>
+
+            <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Travel grant report</h1>
+                    <p class="mt-1 text-gray-600">PyCon Nigeria {{ report.year }}</p>
+                </div>
+                <a href="{% url 'grants:reports_export' %}"
+                   class="px-4 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 font-semibold rounded-lg">
+                    Download CSV
+                </a>
+            </div>
+
+            <div class="mt-6 grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <p class="text-2xl font-bold text-gray-900">{{ report.awarded_count }}</p>
+                    <p class="text-sm text-gray-500">grants awarded</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <p class="text-2xl font-bold text-gray-900">&#8358;{{ report.awarded_total|floatformat:0|intcomma }}</p>
+                    <p class="text-sm text-gray-500">total awarded</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <p class="text-2xl font-bold text-gray-900">{{ report.first_time_attendees }}</p>
+                    <p class="text-sm text-gray-500">first-time attendees</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <p class="text-2xl font-bold text-gray-900">{{ report.speakers_supported }}</p>
+                    <p class="text-sm text-gray-500">speakers supported</p>
+                </div>
+            </div>
+
+            {% if report.budget.has_cap %}
+            <div class="mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Budget</h2>
+                <p class="mt-1 text-gray-900">
+                    &#8358;{{ report.budget.committed|floatformat:0|intcomma }} committed of
+                    &#8358;{{ report.budget.cap|floatformat:0|intcomma }},
+                    <strong>&#8358;{{ report.budget.remaining|floatformat:0|intcomma }} remaining</strong>.
+                </p>
+            </div>
+            {% endif %}
+
+            {% comment %}Four tables rather than one clever loop, because each caption
+            has to say what it is, and a funder reads these one at a time.{% endcomment %}
+            <h2 class="mt-10 text-xl font-bold text-gray-900">By city</h2>
+            {% include "grants/includes/_breakdown.html" with rows=report.by_city caption="Grants awarded by city" %}
+
+            <h2 class="mt-8 text-xl font-bold text-gray-900">By country</h2>
+            {% include "grants/includes/_breakdown.html" with rows=report.by_country caption="Grants awarded by country" %}
+
+            <h2 class="mt-8 text-xl font-bold text-gray-900">By grant type</h2>
+            {% include "grants/includes/_breakdown.html" with rows=report.by_grant_type caption="Grants awarded by type" %}
+
+            <h2 class="mt-8 text-xl font-bold text-gray-900">By gender</h2>
+            <p class="text-sm text-gray-600">
+                Optional and self-described, shown here and nowhere else in this module.
+                {{ report.gender_answered }} of {{ report.awarded_count }} recipients
+                answered, so read this as a sample rather than a census.
+            </p>
+            {% include "grants/includes/_breakdown.html" with rows=report.by_gender caption="Grants awarded by gender" %}
+        </div>
+    </section>
+</div>
+{% endblock %}
