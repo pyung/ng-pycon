@@ -1,0 +1,14 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+We are not able to issue an invitation letter for PyCon Nigeria {{ conference_year }}
+as things stand. Here is why:
+
+{{ decision_note }}
+
+If that is something you can put right, do -- then reply to this email or submit the
+request again, and we will look at it straight away. Most of these are fixable, and
+we would rather sort it out now than have you find out at an appointment you waited
+weeks for.
+
+My request: {{ request_url }}
+{% endblock %}

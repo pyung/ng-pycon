@@ -72,6 +72,10 @@ urlpatterns = [
 
     # Call for Volunteers (must be before Wagtail catch-all)
     path("volunteers/", include("volunteers.urls")),
+
+    # Visa invitation letters. The verification endpoint inside is public on
+    # purpose: an embassy checking a reference has no account here.
+    path("visa/", include("visas.urls")),
     
     # Year-specific routing using custom view. Past years are read-only snapshots.
     path("<int:year>/search/", search_views.search, name="year_search"),

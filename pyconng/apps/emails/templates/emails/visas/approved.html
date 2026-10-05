@@ -1,0 +1,36 @@
+{% extends "emails/_base.html" %}
+{% block title %}Your invitation letter is ready{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    Your invitation letter for PyCon Nigeria {{ conference_year }} is approved and
+    <strong>attached to this email</strong> as a PDF. Print it and take it to your
+    appointment{% if embassy %} in {{ embassy }}{% endif %}.
+  </p>
+  <p style="font-size:20px;font-weight:600;margin:24px 0 4px;letter-spacing:1px;">
+    {{ reference }}
+  </p>
+  <p style="color:#6b7280;margin:0 0 24px;">Reference on the letter</p>
+  {% if decision_note %}
+  <p>{{ decision_note }}</p>
+  {% endif %}
+  <p style="margin:24px 0;padding:16px 20px;background:#f0f1f5;border-radius:8px;">
+    <strong>Book your appointment now if you have not.</strong>
+    Appointments are commonly four to eight weeks out, and the letter cannot make
+    that queue shorter. It is the one part of coming to the conference that nobody
+    can hurry for you.
+  </p>
+  <p>
+    If the embassy wants to check the letter, they can confirm the reference at
+    <a href="{{ verify_url }}">{{ verify_url }}</a> using your surname. You can also
+    download it again at any time:
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ request_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Download the letter</a>
+  </p>
+  <p>
+    Read it before you go. If anything about your name, passport number or dates is
+    wrong, tell us straight away rather than taking it to the appointment &mdash; a
+    letter that disagrees with the passport does more harm than no letter at all.
+  </p>
+{% endblock %}

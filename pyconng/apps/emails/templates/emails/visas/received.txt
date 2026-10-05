@@ -1,0 +1,17 @@
+{% extends "emails/_base.txt" %}{% block content %}Hi {{ applicant_name }},
+
+We have your request for an invitation letter for PyCon Nigeria
+{{ conference_year }}, recorded as {{ basis|lower }}.
+
+You do not need to do anything now. We will email you when it is decided, and the
+letter comes attached to that email.
+
+Check your passport details while you wait. The single most common reason a letter
+is rejected at an embassy is a name that does not match the passport. You can
+correct yours until we decide:
+
+{{ request_url }}
+
+Your passport number is stored only until shortly after the conference and is then
+deleted automatically. Only the visa team can read it.
+{% endblock %}

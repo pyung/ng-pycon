@@ -80,6 +80,63 @@
                             </a>
                         {% endif %}
                     </div>
+                    {# Visa invitation letter #}
+                    {% comment %}Shown to anyone eligible, whether or not they have
+                    started. The lead time is the reason: an embassy appointment takes
+                    weeks to get and weeks to come back from, so the person who has not
+                    started is the one most at risk, and this is where they look.{% endcomment %}
+                    {% if visa_request or visa_eligible %}
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div class="text-2xl mb-3" aria-hidden="true">🛂</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">Visa letter</h3>
+                        {% if visa_request %}
+                            <p class="text-sm text-gray-500 mb-2">
+                                Status: <span class="font-medium text-gray-700">{{ visa_request.get_status_display }}</span>
+                            </p>
+                            {% if visa_request.has_letter %}
+                            <p class="text-sm text-gray-500 mb-4">
+                                Reference <span class="font-mono font-medium text-gray-700">{{ visa_request.reference }}</span>
+                            </p>
+                            {% endif %}
+                            <a href="{% url 'visas:my_request' %}"
+                               class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
+                                {% if visa_request.has_letter %}Download my letter{% else %}My request{% endif %}
+                            </a>
+                        {% elif visa_open %}
+                            <p class="text-sm text-gray-500 mb-4">
+                                Coming from outside Nigeria? Request an invitation letter for
+                                your visa application.
+                                {% if visa_deadline %}Requests close {{ visa_deadline|date:"j F" }}.{% endif %}
+                            </p>
+                            <a href="{% url 'visas:request' %}"
+                               class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
+                                Request a letter
+                            </a>
+                        {% else %}
+                            <p class="text-sm text-gray-500 mb-4">Requests for invitation letters are not open.</p>
+                            <a href="{% url 'visas:landing' %}"
+                               class="inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-gray-50 font-medium rounded-lg transition-colors">
+                                About visa letters
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {# Visa queue, for the officer #}
+                    {% if roles.is_visa_officer %}
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div class="text-2xl mb-3" aria-hidden="true">🛂</div>
+                        <h3 class="font-semibold text-gray-900 mb-2">Visa letter queue</h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            {{ visa_officer_pending }} request{{ visa_officer_pending|pluralize }} waiting for a decision.
+                        </p>
+                        <a href="{% url 'visas:queue' %}"
+                           class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">
+                            Open the queue
+                        </a>
+                    </div>
+                    {% endif %}
+
                     {# Travel Grant #}
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <div class="text-2xl mb-3">✈️</div>

@@ -1,0 +1,11 @@
+{% comment %}
+One status pill. Rejected is amber rather than red: it is nearly always fixable,
+and a red badge tells the applicant the opposite of what the page then says.
+{% endcomment %}
+<span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold
+    {% if request_obj.status == 'approved' %}bg-green-100 text-green-800
+    {% elif request_obj.status == 'submitted' %}bg-blue-100 text-blue-800
+    {% elif request_obj.status == 'rejected' %}bg-amber-100 text-amber-900
+    {% else %}bg-gray-100 text-gray-700{% endif %}">
+    {{ request_obj.get_status_display }}
+</span>

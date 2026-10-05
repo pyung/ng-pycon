@@ -13,7 +13,7 @@ from wagtail.models import Site
 from home.models import HomePage, SponsorPage
 from editions.current import current_year
 
-from accounts.roles import roles_for
+from accounts.roles import Role, roles_for
 
 from grants.models import GrantReviewerAssignment
 from grants.services import GrantService
@@ -130,6 +130,43 @@ def _volunteer_context(user):
         }
 
 
+def _visa_context(user):
+    """
+    Visa letter state for the dashboard.
+
+    Worth a place here rather than only on its own page because of the lead time:
+    somebody who has not started is the person most likely to run out of runway, and
+    the dashboard is where they actually look. Fails soft for the same reason as the
+    volunteer block.
+    """
+    try:
+        from visas import eligibility as visa_eligibility
+        from visas import services as visa_services
+        from visas.models import VisaSettings
+
+        year = current_year()
+        settings_obj = VisaSettings.for_year(year)
+        return {
+            "visa_request": visa_services.request_for(user, year),
+            "visa_open": settings_obj.is_open,
+            "visa_eligible": visa_eligibility.assess(user, year).ok,
+            "visa_deadline": settings_obj.request_deadline,
+            "visa_officer_pending": (
+                visa_services.overview(year)["pending"]
+                if roles_for(user, year).has(Role.VISA_OFFICER)
+                else 0
+            ),
+        }
+    except Exception:  # noqa: BLE001
+        return {
+            "visa_request": None,
+            "visa_open": False,
+            "visa_eligible": False,
+            "visa_deadline": None,
+            "visa_officer_pending": 0,
+        }
+
+
 def dashboard(request):
     """Unified role-based dashboard. Login required. Current year only."""
     if not request.user.is_authenticated:
@@ -154,6 +191,7 @@ def dashboard(request):
 
     sponsor_page = _get_current_year_sponsor_page(request)
     volunteer = _volunteer_context(request.user)
+    visa = _visa_context(request.user)
 
     context = {
         "conference_year": current_year(),
@@ -167,6 +205,7 @@ def dashboard(request):
         "grant_assignment_count": grant_assignment_count,
         "sponsor_page": sponsor_page,
         **volunteer,
+        **visa,
     }
 
     return render(request, "dashboard/dashboard.html", context)

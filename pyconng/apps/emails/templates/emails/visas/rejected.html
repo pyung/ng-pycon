@@ -1,0 +1,21 @@
+{% extends "emails/_base.html" %}
+{% block title %}About your visa letter request{% endblock %}
+{% block content %}
+  <p>Hi {{ applicant_name }},</p>
+  <p>
+    We are not able to issue an invitation letter for PyCon Nigeria
+    {{ conference_year }} as things stand. Here is why:
+  </p>
+  <p style="margin:24px 0;padding:16px 20px;background:#f0f1f5;border-radius:8px;">
+    {{ decision_note }}
+  </p>
+  <p>
+    If that is something you can put right, do &mdash; then reply to this email or
+    submit the request again, and we will look at it straight away. Most of these
+    are fixable, and we would rather sort it out now than have you find out at an
+    appointment you waited weeks for.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="{{ request_url }}" style="background:#1a3a8f;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">My request</a>
+  </p>
+{% endblock %}

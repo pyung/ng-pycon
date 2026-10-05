@@ -54,12 +54,17 @@ def send_email(
     fail_silently: bool = True,
     from_email: str | None = None,
     conference_year: int | None = None,
+    attachments: list[tuple[str, bytes, str]] | None = None,
 ) -> bool:
     """Render and send one email.
 
     ``template`` is a key such as ``"grants/waitlisted"``. An active
     EmailTemplate row for that key wins over the files on disk; pass
     ``conference_year`` to prefer an override written for that edition.
+
+    ``attachments`` are ``(filename, content, mimetype)`` triples. Only the visa
+    letter uses them today: an applicant reading "your letter is ready" on a phone
+    at an embassy should have the letter, not an instruction to go and sign in.
 
     Returns True if a message was handed to the backend, False otherwise.
     Raises only when fail_silently is False.
@@ -97,6 +102,8 @@ def send_email(
         reply_to=reply_to,
     )
     msg.attach_alternative(html_body, "text/html")
+    for name, content, mimetype in attachments or ():
+        msg.attach(name, content, mimetype)
     if tags:
         msg.tags = list(tags)
 

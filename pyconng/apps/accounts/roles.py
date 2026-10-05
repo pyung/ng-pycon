@@ -48,6 +48,7 @@ class Role(models.TextChoices):
     ORGANIZER = "organizer", "Organizer"
     COC_TEAM = "coc_team", "Code of Conduct team"
     VOLUNTEER_CHAIR = "volunteer_chair", "Volunteer coordinator"
+    VISA_OFFICER = "visa_officer", "Visa officer"
 
 
 #: Computed from other records, so they can never be granted by hand.
@@ -75,6 +76,11 @@ IMPLIES = {
     Role.SUPER_ADMIN: frozenset({Role.ORGANIZER}),
 }
 
+#: VISA_OFFICER is implied by nothing either, including SUPER_ADMIN, and for the
+#: same reason as COC_TEAM: the role is read access to passport numbers, which is
+#: the most sensitive data the site holds. That should be given to named people who
+#: know they have it, not fall out of being able to log into the admin.
+#:
 #: VOLUNTEER_CHAIR implies nothing, and nothing implies it. It is not a senior
 #: version of VOLUNTEER: a coordinator reviews applications and builds rosters,
 #: and is frequently not working a shift themselves. Volunteer views accept the

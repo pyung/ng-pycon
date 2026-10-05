@@ -1,0 +1,148 @@
+{% extends base_template %}
+
+{% block title %}Visa letter queue{% endblock %}
+{% block body_class %}template-visa-queue{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <section class="px-4 py-12">
+        <div class="max-w-5xl mx-auto">
+            {% include "visas/includes/_messages.html" %}
+
+            <h1 class="text-3xl font-bold text-gray-900">
+                Visa letters {{ conference_year }}
+            </h1>
+
+            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+                    <div class="text-2xl font-bold text-gray-900">{{ overview.pending }}</div>
+                    <div class="text-sm text-gray-500">Waiting</div>
+                </div>
+                {% comment %}Past the turnaround the form promises. Red because it is
+                the only number here that means somebody may miss an appointment.{% endcomment %}
+                <div class="rounded-xl bg-white border {% if overview.overdue %}border-red-300{% else %}border-gray-100{% endif %} shadow-sm p-4">
+                    <div class="text-2xl font-bold {% if overview.overdue %}text-red-700{% else %}text-gray-900{% endif %}">{{ overview.overdue }}</div>
+                    <div class="text-sm text-gray-500">Past {{ overview.settings.processing_days }} days</div>
+                </div>
+                <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+                    <div class="text-2xl font-bold text-gray-900">{{ overview.approved }}</div>
+                    <div class="text-sm text-gray-500">Letters issued</div>
+                </div>
+                <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+                    <div class="text-2xl font-bold text-gray-900">{{ overview.holding_details }}</div>
+                    <div class="text-sm text-gray-500">Holding passport data</div>
+                </div>
+            </div>
+
+            {% if overview.settings.deadline_is_too_late %}
+            <div role="alert" class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                <p class="font-bold text-amber-900">The request deadline is later than the lead time allows.</p>
+                <p class="mt-1 text-sm text-amber-900">
+                    Requests close {{ overview.settings.request_deadline|date:"j F Y" }}, but an
+                    embassy needs about {{ overview.settings.embassy_lead_days }} days, which puts
+                    the last useful date at {{ overview.settings.recommended_deadline|date:"j F Y" }}.
+                    Anyone applying at the deadline will not get their visa in time.
+                </p>
+            </div>
+            {% endif %}
+
+            <div class="mt-6 rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+                <form method="get" class="flex flex-wrap items-center gap-3">
+                    <span class="text-sm font-medium text-gray-700" aria-hidden="true">Show:</span>
+                    <label for="filter_status" class="sr-only">Filter by status</label>
+                    <select name="status" id="filter_status"
+                            class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="">All requests</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit"
+                            class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg">
+                        Apply
+                    </button>
+                    {% if selected_status %}
+                    <a href="{% url 'visas:queue' %}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <div class="mt-6 rounded-xl bg-white border border-gray-100 shadow-sm overflow-x-auto">
+                <table class="w-full min-w-[48rem]">
+                    <caption class="sr-only">
+                        Visa letter requests for {{ conference_year }}, longest waiting first
+                    </caption>
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Applicant</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Attending as</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Passport</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Waiting</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                            <th scope="col" class="px-4 py-3"><span class="sr-only">Open</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for request_obj in requests %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900 text-sm">{{ request_obj.display_name }}</div>
+                                <div class="text-xs text-gray-400">{{ request_obj.user.email }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">{{ request_obj.get_basis_display|default:"—" }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                <span class="font-mono">{{ request_obj.passport_number_masked }}</span>
+                                <div class="text-xs text-gray-400">{{ request_obj.nationality }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm {% if request_obj.days_waiting >= overview.settings.processing_days %}text-red-700 font-semibold{% else %}text-gray-600{% endif %}">
+                                {% if request_obj.days_waiting != None %}
+                                {{ request_obj.days_waiting }} day{{ request_obj.days_waiting|pluralize }}
+                                {% else %}&mdash;{% endif %}
+                            </td>
+                            <td class="px-4 py-3">{% include "visas/includes/_status.html" %}</td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{% url 'visas:detail' pk=request_obj.pk %}"
+                                   class="text-sm font-semibold text-teal-700 hover:text-teal-800">
+                                    Open<span class="sr-only"> the request from {{ request_obj.display_name }}</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-10 text-center text-gray-500">
+                                No requests{% if selected_status %} with that status{% endif %}.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if overview.holding_details %}
+            <div class="mt-8 rounded-xl bg-white border border-gray-100 shadow-sm p-6">
+                <h2 class="text-lg font-bold text-gray-900">Passport data</h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    {{ overview.holding_details }} request{{ overview.holding_details|pluralize }}
+                    still hold{{ overview.holding_details|pluralize:"s," }} passport details.
+                    {% if overview.purge_due_on %}
+                    They are deleted automatically on or after {{ overview.purge_due_on|date:"j F Y" }}.
+                    {% else %}
+                    Set the edition's dates so the deletion date can be worked out.
+                    {% endif %}
+                </p>
+                <form method="post" action="{% url 'visas:purge' %}" class="mt-4">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-semibold transition-colors">
+                        Delete passport details now
+                    </button>
+                    <span class="ml-2 text-xs text-gray-500">
+                        Letters, references and the audit trail are kept. This cannot be undone.
+                    </span>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

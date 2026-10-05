@@ -23,6 +23,10 @@ NAMED_URLS = (
     "tickets:home",
     "grants:landing",
     "volunteers:landing",
+    "visas:landing",
+    # The only page on the site whose audience is not ours: a consular officer
+    # checking a reference, once, on a connection we cannot assume anything about.
+    "visas:verify",
     "login",
     "signup",
     "search",
