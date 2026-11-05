@@ -541,3 +541,127 @@ class VerificationTests(TestCase):
         response = self.client.get("/visa/verify/")
         self.assertContains(response, "not available for this edition")
         self.assertNotContains(response, "Check this letter")
+
+
+class WagtailAdminTests(TestCase):
+    """
+    What the Wagtail admin exposes, which is a separate question from what the
+    module's own views do.
+
+    A default modeladmin on VisaLetterRequest put the raw passport number on an
+    editable form with no audit entry, and let a bare save mint a reference without
+    the eligibility re-check or the email -- all gated on a Django permission rather
+    than on the role. These tests exist because that shipped once.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        build_site()
+
+    def setUp(self):
+        invalidate()
+        open_visas()
+        self.applicant = make_user()
+        give_paid_ticket(self.applicant)
+        self.request_obj = make_request(self.applicant)
+
+        self.officer = make_user("officer@example.com", is_staff=True)
+        RoleAssignment.objects.create(
+            user=self.officer, role=Role.VISA_OFFICER.value, conference_year=YEAR
+        )
+
+    def _helper(self):
+        from visas.wagtail_hooks import VisaLetterRequestAdmin
+
+        admin = VisaLetterRequestAdmin()
+        return admin.permission_helper, admin
+
+    def test_nobody_can_edit_a_request_through_the_admin(self):
+        helper, _ = self._helper()
+        self.assertFalse(helper.user_can_edit_obj(self.officer, self.request_obj))
+
+    def test_nobody_can_create_or_delete_one_either(self):
+        helper, _ = self._helper()
+        self.assertFalse(helper.user_can_create(self.officer))
+        self.assertFalse(helper.user_can_delete_obj(self.officer, self.request_obj))
+
+    def test_only_a_visa_officer_can_list_requests(self):
+        helper, _ = self._helper()
+        self.assertTrue(helper.user_can_list(self.officer))
+        self.assertFalse(helper.user_can_list(self.applicant))
+
+    def test_a_superuser_is_not_waved_through_the_admin_either(self):
+        helper, _ = self._helper()
+        root = make_user("root@example.com", is_superuser=True, is_staff=True)
+        self.assertFalse(helper.user_can_list(root))
+
+    def test_the_django_change_permission_is_not_a_way_in(self):
+        """
+        The gap this closes: access is the role, not `change_visaletterrequest`.
+        """
+        from django.contrib.auth.models import Permission
+
+        staffer = make_user("staffer@example.com", is_staff=True)
+        staffer.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="visas", codename__contains="visaletterrequest"
+            )
+        )
+        staffer = type(staffer).objects.get(pk=staffer.pk)  # drop the perm cache
+        helper, _ = self._helper()
+        self.assertFalse(helper.user_can_list(staffer))
+        self.assertFalse(helper.user_can_edit_obj(staffer, self.request_obj))
+
+    def test_the_inspect_view_never_shows_passport_details(self):
+        from visas.wagtail_hooks import VisaLetterRequestAdmin
+
+        fields = VisaLetterRequestAdmin.inspect_view_fields
+        for sensitive in ("passport_number", "date_of_birth", "passport_expiry"):
+            self.assertNotIn(sensitive, fields)
+        self.assertIn("passport_number_masked", fields)
+
+    def test_the_list_shows_the_masked_number_only(self):
+        from visas.wagtail_hooks import VisaLetterRequestAdmin
+
+        self.assertIn("passport_number_masked", VisaLetterRequestAdmin.list_display)
+        self.assertNotIn("passport_number", VisaLetterRequestAdmin.list_display)
+
+    def test_a_non_officer_sees_an_empty_queryset(self):
+        from unittest.mock import Mock
+
+        from visas.wagtail_hooks import VisaLetterRequestAdmin
+
+        admin = VisaLetterRequestAdmin()
+        self.assertEqual(admin.get_queryset(Mock(user=self.applicant)).count(), 0)
+        self.assertEqual(admin.get_queryset(Mock(user=self.officer)).count(), 1)
+
+    def test_the_letterhead_stays_fully_editable(self):
+        """
+        The other half of the requirement: an officer must be able to change the
+        address, the RC number and who signs without a developer.
+        """
+        from visas.wagtail_hooks import VisaSettingsAdmin
+
+        admin = VisaSettingsAdmin()
+        handler = admin.get_edit_handler().bind_to_model(admin.model)
+        fields = handler.get_form_class().base_fields
+        for needed in (
+            "organisation_address", "organisation_registration",
+            "signatory_name", "signatory_title", "contact_email", "contact_phone",
+            "status", "request_deadline", "retain_details_days", "logo",
+        ):
+            self.assertIn(needed, fields, needed)
+
+    def test_the_visa_officer_role_is_grantable_in_the_admin(self):
+        """Muqeetat's assignment has to be editable by an organizer, not by me."""
+        from accounts.roles import grantable_choices
+        from accounts.wagtail_hooks import RoleAssignmentAdmin
+
+        self.assertIn(
+            Role.VISA_OFFICER.value, [value for value, _ in grantable_choices()]
+        )
+        admin = RoleAssignmentAdmin()
+        handler = admin.get_edit_handler().bind_to_model(admin.model)
+        fields = handler.get_form_class().base_fields
+        for needed in ("user", "role", "conference_year", "is_active"):
+            self.assertIn(needed, fields)

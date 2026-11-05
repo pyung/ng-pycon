@@ -3,6 +3,7 @@ Create the module 2 pages under the current homepage.
 
     python manage.py create_site_pages            # create as drafts
     python manage.py create_site_pages --publish  # create and publish
+    python manage.py create_site_pages --repair   # fill in missing form fields / FAQ rows
 
 Five page types -- Code of Conduct, FAQ, contact, travel and blog -- each needing
 a parent, a slug and in the contact form's case a set of fields. Doing that by
@@ -13,6 +14,20 @@ Drafts by default, and deliberately so. The skeleton content here is structure,
 not copy: a Code of Conduct is a commitment the organizers make in their own
 words, and this command must never be the reason placeholder text goes live.
 Idempotent -- an existing page of the same type is left exactly as it is.
+
+That idempotency has one blind spot, which ``--repair`` exists for. A page whose
+*children* never arrived -- the contact form's fields, the FAQ's questions -- is an
+existing page, so a re-run skips it and the half-made version stays. That is not
+hypothetical: the live contact page was found rendering a heading, an intro, and no
+form at all, because a database restore brought the page back without its fields.
+``--repair`` adds those rows to a page that has none, and touches no prose, so it
+can never overwrite something somebody wrote.
+
+One exception, and it is the whole reason the rule above exists. The contact form's
+fields are structure and are safe to add to a live page. The FAQ's starter questions
+are *not*: their answers say "To be written", and a repair would put that on a page
+the public can already read. So on a live FAQ page ``--repair`` refuses and says so,
+unless ``--force-faq`` is passed by somebody who has decided that is what they want.
 """
 
 from django.core.management.base import BaseCommand, CommandError
@@ -77,6 +92,22 @@ class Command(BaseCommand):
             action="store_true",
             help="Publish the pages. Without this they are created as drafts.",
         )
+        parser.add_argument(
+            "--repair",
+            action="store_true",
+            help=(
+                "Add missing form fields and FAQ rows to pages that already exist. "
+                "Never changes copy."
+            ),
+        )
+        parser.add_argument(
+            "--force-faq",
+            action="store_true",
+            help=(
+                "Let --repair add the starter questions to a FAQ page that is "
+                "already live, placeholder answers and all. Off by default."
+            ),
+        )
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -87,6 +118,10 @@ class Command(BaseCommand):
             )
 
         publish = options["publish"]
+        self.repair = options["repair"]
+        self.force_faq = options["force_faq"]
+        self.repairs = []
+        self.refused = []
         created = []
         skipped = []
 
@@ -108,8 +143,25 @@ class Command(BaseCommand):
         for page in skipped:
             self.stdout.write(f"  exists            {page.url_path}  {page.title}")
 
+        for page, what in self.repairs:
+            self.stdout.write(
+                self.style.SUCCESS(f"  repaired          {page.url_path}  {what}")
+            )
+        for page, why in self.refused:
+            self.stdout.write(
+                self.style.WARNING(f"  skipped           {page.url_path}  {why}")
+            )
+
         self.stdout.write("")
-        self.stdout.write(f"{len(created)} created, {len(skipped)} already there.")
+        self.stdout.write(
+            f"{len(created)} created, {len(skipped)} already there"
+            + (f", {len(self.repairs)} repaired." if self.repairs else ".")
+        )
+        if skipped and not self.repair:
+            self.stdout.write(
+                "Pass --repair to fill in missing form fields or FAQ rows on the "
+                "pages that already exist. It does not touch copy."
+            )
         if created and not publish:
             self.stdout.write(
                 "Created as drafts. Write the copy in the admin, then publish. "
@@ -183,6 +235,22 @@ class Command(BaseCommand):
     def _faq(self, home, publish):
         existing = self._existing(FAQPage, home)
         if existing:
+            if self.repair and not existing.questions.exists():
+                if existing.live and not self.force_faq:
+                    # The starter answers read "To be written". An empty FAQ page
+                    # already says "no questions have been added yet", which is
+                    # honest; eight unanswered questions on a live page is not.
+                    self.refused.append((
+                        existing,
+                        "live page, so the starter questions were not added "
+                        "(their answers are placeholders). Write them in the "
+                        "admin, or pass --force-faq.",
+                    ))
+                else:
+                    self._faq_items(existing)
+                    self.repairs.append(
+                        (existing, f"{len(FAQ_SKELETON)} FAQ question(s)")
+                    )
             return existing, False
         page = FAQPage(
             title="FAQs",
@@ -194,6 +262,10 @@ class Command(BaseCommand):
             ),
         )
         self._add(home, page, publish)
+        self._faq_items(page)
+        return page, True
+
+    def _faq_items(self, page):
         for order, (section, question, answer) in enumerate(FAQ_SKELETON):
             FAQItem.objects.create(
                 page=page,
@@ -202,11 +274,15 @@ class Command(BaseCommand):
                 question=question,
                 answer=f"<p>{answer}</p>",
             )
-        return page, True
 
     def _contact(self, home, publish):
         existing = self._existing(ContactPage, home)
         if existing:
+            if self.repair and not existing.form_fields.exists():
+                self._contact_fields(existing)
+                self.repairs.append(
+                    (existing, f"{len(CONTACT_FIELDS)} form field(s)")
+                )
             return existing, False
         page = ContactPage(
             title="Contact",
@@ -223,6 +299,10 @@ class Command(BaseCommand):
             subject="Website contact form",
         )
         self._add(home, page, publish)
+        self._contact_fields(page)
+        return page, True
+
+    def _contact_fields(self, page):
         for order, (label, field_type, required, help_text, choices) in enumerate(
             CONTACT_FIELDS
         ):
@@ -235,7 +315,6 @@ class Command(BaseCommand):
                 help_text=help_text,
                 choices=choices,
             )
-        return page, True
 
     def _travel(self, home, publish):
         existing = self._existing(TravelPage, home)

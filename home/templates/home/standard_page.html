@@ -18,6 +18,13 @@
         {% for block in page.body %}
           {% include_block block %}
         {% endfor %}
+      {% elif not page.intro %}
+        {% comment %}A published page with nothing in it yet. Say so, rather than
+        leaving a heading above a void that reads as a broken page.{% endcomment %}
+        <p class="text-gray-600">
+          This page is still being written. If you need something that should be
+          here, <a href="/contact/">get in touch</a> and we will answer directly.
+        </p>
       {% endif %}
     </article>
   </div>

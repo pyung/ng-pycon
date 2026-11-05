@@ -146,16 +146,23 @@ if db == 'sqlite':
         }
     }
 else:
+    db_schema = os.getenv('DB_SCHEMA', 'pyconng')
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.postgresql",
+            # Our own thin subclass of the postgresql backend: identical, except it
+            # creates `db_schema` when it first connects. Without that, a database
+            # nobody has run CREATE SCHEMA on cannot be migrated at all -- which
+            # includes every test database, since Django builds those from nothing.
+            "ENGINE": "pyconng.dbbackend",
             "NAME": os.getenv('DB_NAME', 'pyconng_db'),
             "USER": os.getenv('DB_USER', 'pyconng_user'),
             "PASSWORD": os.getenv('DB_PASSWORD', 'pyconng_password'),
             "HOST": os.getenv('DB_HOST', 'localhost'),
             "PORT": os.getenv('DB_PORT', '5432'),
             'OPTIONS': {
-                'options': f"-c search_path={os.getenv('DB_SCHEMA', 'pyconng')}"
+                'options': f"-c search_path={db_schema}",
+                # Read by the backend above and never passed to libpq.
+                'create_schema': db_schema,
             }
         }
     }

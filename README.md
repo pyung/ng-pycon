@@ -71,7 +71,7 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
-For PostgreSQL instead:
+For PostgreSQL instead — leave `DB` unset, or set it to anything but `sqlite`:
 
 ```env
 DB_NAME=pyconng_db
@@ -79,7 +79,25 @@ DB_USER=pyconng_user
 DB_PASSWORD=pyconng_password
 DB_HOST=localhost
 DB_PORT=5432
+DB_SCHEMA=pyconng
 ```
+
+The role, the database and the ability to create a database are yours to provide;
+**the schema is not**. `DB_SCHEMA` is created on first connect by
+`pyconng/dbbackend`, so a brand-new database needs no `CREATE SCHEMA` step — which
+also means Django can build its own test database, something it could not do before
+that backend existed.
+
+Against a container that has only the default superuser, that is:
+
+```sql
+CREATE ROLE pyconng_user LOGIN CREATEDB PASSWORD '...';
+CREATE DATABASE pyconng_db OWNER pyconng_user;
+```
+
+`CREATEDB` is for `manage.py test`, which builds and drops `test_pyconng_db` on
+every run. Drop it if you never run the suite against Postgres — though see below
+for why you should.
 
 ### 6. Run migrations
 
@@ -123,6 +141,26 @@ This runs:
 | `npm run build-css` | Build CSS once (for production) |
 | `npm run build-css-watch` | Watch and rebuild CSS only |
 | `npm run build` | Build CSS and vendor Alpine (what the Docker image runs) |
+
+---
+
+## Tests
+
+```bash
+python manage.py test                      # SQLite, the quick one
+DB=postgres python manage.py test --noinput  # what production actually runs
+```
+
+**Run both before anything structural ships.** Production runs PostgreSQL in a
+named schema; SQLite has no schemas at all and differs on constraint semantics, and
+the partial unique constraints in ticketing and grants are exactly where the two
+disagree. For a long time the suite had only ever run against SQLite — and the
+first attempt to run it against Postgres failed before a single test executed. See
+`pyconng/dbbackend/base.py` for what that turned out to be.
+
+`DB=postgres` needs `CREATEDB` on the role, because the test runner builds and drops
+`test_pyconng_db` each run. `--noinput` stops it stalling on a prompt if a previous
+run left that database behind.
 
 ---
 
@@ -343,6 +381,7 @@ ng-pycon/
 | `DB_PASSWORD` | PostgreSQL password | `pyconng_password` |
 | `DB_HOST` | PostgreSQL host | `localhost` |
 | `DB_PORT` | PostgreSQL port | `5432` |
+| `DB_SCHEMA` | Schema to use, created on first connect | `pyconng` |
 | `SECRET_KEY` | Django secret key | — |
 | `DEBUG` | Debug mode | `True` (dev) |
 | `ALLOWED_HOSTS` | Comma-separated hosts | `localhost,127.0.0.1` |
