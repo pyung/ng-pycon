@@ -64,8 +64,15 @@ def conference_context(request):
     if edition is None:
         edition = edition_for_year(current_year())
 
-    # Fall back to base.html when a theme has no dedicated base template.
-    base_template = f"base_{year}.html"
+    # Keyed on the *theme*, not the year, which is what every other part of the
+    # design already follows -- the stylesheet, the fonts and the homepage body
+    # template all come from Edition.theme. Keying this one on the year worked
+    # only because every theme slug so far happens to equal its year. The moment
+    # an edition reuses another's design (2027 set to theme "2026", say), the
+    # year form would load that theme's CSS and fonts under base.html's chrome.
+    # Falls back to base.html when a theme has no dedicated base template.
+    theme_slug = edition.theme if edition else None
+    base_template = f"base_{theme_slug}.html" if theme_slug else "base.html"
     try:
         get_template(base_template)
     except Exception:

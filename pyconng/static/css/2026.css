@@ -2192,6 +2192,10 @@ select {
   pointer-events: none;
 }
 
+.visible {
+  visibility: visible;
+}
+
 .static {
   position: static;
 }
@@ -2228,10 +2232,6 @@ select {
   right: 0px;
 }
 
-.right-4 {
-  right: 1rem;
-}
-
 .right-auto {
   right: auto;
 }
@@ -2256,10 +2256,6 @@ select {
   z-index: 40;
 }
 
-.z-50 {
-  z-index: 50;
-}
-
 .z-\[200\] {
   z-index: 200;
 }
@@ -2276,6 +2272,16 @@ select {
 .my-3 {
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.my-6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.my-8 {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 .mb-1 {
@@ -2334,6 +2340,10 @@ select {
   margin-left: auto;
 }
 
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
 .mr-4 {
   margin-right: 1rem;
 }
@@ -2352,6 +2362,10 @@ select {
 
 .mt-1\.5 {
   margin-top: 0.375rem;
+}
+
+.mt-10 {
+  margin-top: 2.5rem;
 }
 
 .mt-12 {
@@ -2533,8 +2547,16 @@ select {
   width: 1rem;
 }
 
+.w-48 {
+  width: 12rem;
+}
+
 .w-5 {
   width: 1.25rem;
+}
+
+.w-56 {
+  width: 14rem;
 }
 
 .w-6 {
@@ -2557,6 +2579,10 @@ select {
   min-width: 0px;
 }
 
+.min-w-\[16rem\] {
+  min-width: 16rem;
+}
+
 .min-w-\[200px\] {
   min-width: 200px;
 }
@@ -2567,6 +2593,14 @@ select {
 
 .min-w-\[280px\] {
   min-width: 280px;
+}
+
+.min-w-\[48rem\] {
+  min-width: 48rem;
+}
+
+.min-w-\[52rem\] {
+  min-width: 52rem;
 }
 
 .min-w-\[80px\] {
@@ -2635,6 +2669,14 @@ select {
 
 .flex-grow {
   flex-grow: 1;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.border-collapse {
+  border-collapse: collapse;
 }
 
 .-translate-y-1 {
@@ -2761,6 +2803,10 @@ select {
   cursor: pointer;
 }
 
+.resize {
+  resize: both;
+}
+
 .list-none {
   list-style-type: none;
 }
@@ -2813,6 +2859,10 @@ select {
   gap: 0.25rem;
 }
 
+.gap-1\.5 {
+  gap: 0.375rem;
+}
+
 .gap-10 {
   gap: 2.5rem;
 }
@@ -2839,10 +2889,6 @@ select {
 
 .gap-8 {
   gap: 2rem;
-}
-
-.gap-1\.5 {
-  gap: 0.375rem;
 }
 
 .space-x-1 > :not([hidden]) ~ :not([hidden]) {
@@ -2873,6 +2919,18 @@ select {
   --tw-space-y-reverse: 0;
   margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(0.25rem * var(--tw-space-y-reverse));
+}
+
+.space-y-1\.5 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.375rem * var(--tw-space-y-reverse));
+}
+
+.space-y-10 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(2.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(2.5rem * var(--tw-space-y-reverse));
 }
 
 .space-y-2 > :not([hidden]) ~ :not([hidden]) {
@@ -2936,8 +2994,20 @@ select {
   white-space: nowrap;
 }
 
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+.whitespace-pre-line {
+  white-space: pre-line;
+}
+
 .whitespace-pre-wrap {
   white-space: pre-wrap;
+}
+
+.break-words {
+  overflow-wrap: break-word;
 }
 
 .break-all {
@@ -2973,6 +3043,11 @@ select {
   border-bottom-left-radius: 0.75rem;
 }
 
+.rounded-r-xl {
+  border-top-right-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+}
+
 .rounded-t-xl {
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
@@ -2990,6 +3065,10 @@ select {
   border-width: 2px;
 }
 
+.border-4 {
+  border-width: 4px;
+}
+
 .border-b {
   border-bottom-width: 1px;
 }
@@ -3004,6 +3083,14 @@ select {
 
 .border-t {
   border-top-width: 1px;
+}
+
+.border-t-2 {
+  border-top-width: 2px;
+}
+
+.border-double {
+  border-style: double;
 }
 
 .border-amber-200 {
@@ -3054,6 +3141,11 @@ select {
 .border-green-200 {
   --tw-border-opacity: 1;
   border-color: rgb(187 247 208 / var(--tw-border-opacity, 1));
+}
+
+.border-green-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(134 239 172 / var(--tw-border-opacity, 1));
 }
 
 .border-green-500 {
@@ -3115,6 +3207,16 @@ select {
   border-color: rgb(20 184 166 / 0.5);
 }
 
+.border-teal-600 {
+  --tw-border-opacity: 1;
+  border-color: rgb(13 148 136 / var(--tw-border-opacity, 1));
+}
+
+.border-teal-700 {
+  --tw-border-opacity: 1;
+  border-color: rgb(15 118 110 / var(--tw-border-opacity, 1));
+}
+
 .border-white {
   --tw-border-opacity: 1;
   border-color: rgb(255 255 255 / var(--tw-border-opacity, 1));
@@ -3151,6 +3253,10 @@ select {
 .bg-amber-50 {
   --tw-bg-opacity: 1;
   background-color: rgb(255 251 235 / var(--tw-bg-opacity, 1));
+}
+
+.bg-amber-50\/40 {
+  background-color: rgb(255 251 235 / 0.4);
 }
 
 .bg-amber-500 {
@@ -3304,6 +3410,16 @@ select {
 .bg-red-500 {
   --tw-bg-opacity: 1;
   background-color: rgb(239 68 68 / var(--tw-bg-opacity, 1));
+}
+
+.bg-red-600 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(220 38 38 / var(--tw-bg-opacity, 1));
+}
+
+.bg-red-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(185 28 28 / var(--tw-bg-opacity, 1));
 }
 
 .bg-teal-100 {
@@ -3506,6 +3622,18 @@ select {
      object-fit: cover;
 }
 
+.p-0 {
+  padding: 0px;
+}
+
+.p-1 {
+  padding: 0.25rem;
+}
+
+.p-10 {
+  padding: 2.5rem;
+}
+
 .p-12 {
   padding: 3rem;
 }
@@ -3530,8 +3658,9 @@ select {
   padding: 2rem;
 }
 
-.p-0 {
-  padding: 0px;
+.px-1 {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .px-10 {
@@ -3542,6 +3671,11 @@ select {
 .px-2 {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+
+.px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
 }
 
 .px-3 {
@@ -3567,6 +3701,11 @@ select {
 .px-8 {
   padding-left: 2rem;
   padding-right: 2rem;
+}
+
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
 }
 
 .py-1 {
@@ -3634,6 +3773,11 @@ select {
   padding-bottom: 1.25rem;
 }
 
+.py-6 {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
 .py-8 {
   padding-top: 2rem;
   padding-bottom: 2rem;
@@ -3651,6 +3795,10 @@ select {
   padding-bottom: 4rem;
 }
 
+.pb-2 {
+  padding-bottom: 0.5rem;
+}
+
 .pb-20 {
   padding-bottom: 5rem;
 }
@@ -3659,8 +3807,20 @@ select {
   padding-bottom: 1rem;
 }
 
+.pb-5 {
+  padding-bottom: 1.25rem;
+}
+
+.pb-6 {
+  padding-bottom: 1.5rem;
+}
+
 .pb-8 {
   padding-bottom: 2rem;
+}
+
+.pr-4 {
+  padding-right: 1rem;
 }
 
 .pt-1 {
@@ -3669,6 +3829,14 @@ select {
 
 .pt-10 {
   padding-top: 2.5rem;
+}
+
+.pt-12 {
+  padding-top: 3rem;
+}
+
+.pt-14 {
+  padding-top: 3.5rem;
 }
 
 .pt-16 {
@@ -3685,6 +3853,10 @@ select {
 
 .pt-4 {
   padding-top: 1rem;
+}
+
+.pt-5 {
+  padding-top: 1.25rem;
 }
 
 .pt-6 {
@@ -3705,6 +3877,10 @@ select {
 
 .text-right {
   text-align: right;
+}
+
+.align-top {
+  vertical-align: top;
 }
 
 .font-mono {
@@ -3801,12 +3977,28 @@ select {
   text-transform: capitalize;
 }
 
+.normal-case {
+  text-transform: none;
+}
+
+.italic {
+  font-style: italic;
+}
+
 .leading-relaxed {
   line-height: 1.625;
 }
 
 .leading-tight {
   line-height: 1.25;
+}
+
+.tracking-\[0\.2em\] {
+  letter-spacing: 0.2em;
+}
+
+.tracking-normal {
+  letter-spacing: 0em;
 }
 
 .tracking-tight {
@@ -3849,6 +4041,11 @@ select {
 .text-amber-700 {
   --tw-text-opacity: 1;
   color: rgb(180 83 9 / var(--tw-text-opacity, 1));
+}
+
+.text-amber-800 {
+  --tw-text-opacity: 1;
+  color: rgb(146 64 14 / var(--tw-text-opacity, 1));
 }
 
 .text-amber-900 {
@@ -3961,6 +4158,15 @@ select {
   color: rgb(22 101 52 / var(--tw-text-opacity, 1));
 }
 
+.text-green-900 {
+  --tw-text-opacity: 1;
+  color: rgb(20 83 45 / var(--tw-text-opacity, 1));
+}
+
+.text-green-900\/70 {
+  color: rgb(20 83 45 / 0.7);
+}
+
 .text-orange-700 {
   --tw-text-opacity: 1;
   color: rgb(194 65 12 / var(--tw-text-opacity, 1));
@@ -3999,6 +4205,11 @@ select {
 .text-red-800 {
   --tw-text-opacity: 1;
   color: rgb(153 27 27 / var(--tw-text-opacity, 1));
+}
+
+.text-red-900 {
+  --tw-text-opacity: 1;
+  color: rgb(127 29 29 / var(--tw-text-opacity, 1));
 }
 
 .text-teal-100 {
@@ -4105,6 +4316,10 @@ select {
 
 .opacity-50 {
   opacity: 0.5;
+}
+
+.opacity-60 {
+  opacity: 0.6;
 }
 
 .opacity-75 {
@@ -4277,7 +4492,10 @@ select {
   backdrop-filter: blur(10px);
 }
 
-/* 2026 fonts — Syne (display) + Source Sans 3 (body) */
+/* Fonts are loaded by the base template, not from here: a CSS @import is
+   only valid before any other rule, so PostCSS dropped the one that used to
+   sit on this line and no theme has ever loaded its typefaces. The URLs now
+   live in pyconng/apps/editions/webfonts.py. */
 
 /* ========== Base theme infrastructure (merged from _base.css) ========== */
 
@@ -4616,35 +4834,64 @@ select {
 
 /* ========== 2026 Theme - Future Forward ========== */
 
+/* ===================== 2026 theme tokens =====================
+   One ground, one primary, one counterpart for dark surfaces and one accent
+   reserved for deadlines. The previous set ran a teal primary, a blue
+   secondary and an amber accent at full saturation, so nothing could be
+   emphasised because everything already was.
+
+   --theme-primary, --theme-secondary and --theme-accent are overridden per
+   edition by a <style> block the base template emits from the Edition record,
+   so these three are defaults rather than fixed values. Everything else here
+   is structural and needs a deploy to change. */
+
 .theme-2026 {
   --theme-font-heading: 'Syne', system-ui, sans-serif;
   --theme-font-body: 'Source Sans 3', system-ui, sans-serif;
-  --theme-primary: #0F766E;
-  --theme-primary-light: #14B8A6;
-  --theme-primary-mid: #115E59;
-  --theme-primary-50: #f0fdfa;
-  --theme-primary-100: #ccfbf1;
-  --theme-primary-200: #99f6e4;
-  --theme-primary-300: #5eead4;
-  --theme-primary-400: #2dd4bf;
-  --theme-primary-500: #14b8a6;
-  --theme-primary-600: #0d9488;
-  --theme-primary-700: #0f766e;
-  --theme-primary-800: #115e59;
-  --theme-primary-900: #134e4a;
-  --theme-accent: #F59E0B;
-  --theme-dark: #0B1F24;
-  --theme-text: #1F2937;
-  --theme-text-light: #E5E7EB;
-  --theme-bg-light: #F9FAFB;
-  --theme-shadow-sm: 0 1px 3px rgba(15, 118, 110, 0.12);
-  --theme-shadow-md: 0 4px 12px rgba(15, 118, 110, 0.15);
-  --theme-shadow-lg: 0 8px 24px rgba(15, 118, 110, 0.18);
-  --theme-shadow-xl: 0 16px 40px rgba(15, 118, 110, 0.22);
-  --theme-radius-sm: 8px;
-  --theme-radius-md: 16px;
-  --theme-radius-lg: 24px;
-  --theme-radius-xl: 32px;
+  /* Deep green, on light grounds only. 6.1:1 on white, so it carries body
+     text and not just headings. */
+  --theme-primary: #0E6B3D;
+  --theme-primary-light: #3DDC84;
+  --theme-primary-mid: #0A512E;
+  --theme-primary-50: #f0f7f2;
+  --theme-primary-100: #d6ebdd;
+  --theme-primary-200: #a9d6bb;
+  --theme-primary-300: #74bb93;
+  --theme-primary-400: #3f9a6b;
+  --theme-primary-500: #16874c;
+  --theme-primary-600: #0E6B3D;
+  --theme-primary-700: #0A512E;
+  --theme-primary-800: #073a21;
+  --theme-primary-900: #052716;
+  /* Spring: the primary's counterpart on dark grounds. Never on white, where
+     it fails contrast -- that is what --theme-primary is for. */
+  --theme-secondary: #3DDC84;
+  /* Ochre, and deadlines alone. Its scarcity is the point: when it shows up,
+     something has a date attached. 5.9:1 on its own tint. */
+  --theme-accent: #8A4E06;
+  --theme-accent-bg: #FDF2E0;
+  /* Grounds and ink. Near-black with a green cast so it sits with the primary
+     rather than fighting it; a cool off-white rather than cream. */
+  --theme-dark: #0D1711;
+  --theme-dark-2: #0A120D;
+  --theme-hairline: #1E2B23;
+  --theme-text: #0D1711;
+  --theme-text-2: #2E3A33;
+  --theme-muted: #5A6861;
+  --theme-text-light: #B9C7BE;
+  --theme-bg-light: #F1F4F1;
+  --theme-line: #DCE2DD;
+  /* Structure comes from hairlines and a grid, not from stacked shadows. */
+  --theme-shadow-sm: 0 1px 2px rgba(13, 23, 17, 0.06);
+  --theme-shadow-md: 0 1px 3px rgba(13, 23, 17, 0.08);
+  --theme-shadow-lg: 0 2px 6px rgba(13, 23, 17, 0.08);
+  --theme-shadow-xl: 0 4px 12px rgba(13, 23, 17, 0.10);
+  /* 4px on controls, square on structure. Soft corners on everything read as
+     generic; the old scale went to 32px. */
+  --theme-radius-sm: 3px;
+  --theme-radius-md: 4px;
+  --theme-radius-lg: 4px;
+  --theme-radius-xl: 6px;
 }
 
 [data-theme="2026"] {
@@ -4669,35 +4916,41 @@ select {
   --theme-spacing-2xl: 3rem;
   --theme-spacing-3xl: 4rem;
   --theme-spacing-4xl: 6rem;
-  --theme-radius-sm: 6px;
-  --theme-radius-md: 8px;
-  --theme-radius-lg: 12px;
-  --theme-radius-xl: 16px;
-  --theme-radius-2xl: 24px;
+  --theme-radius-sm: 3px;
+  --theme-radius-md: 4px;
+  --theme-radius-lg: 4px;
+  --theme-radius-xl: 6px;
+  --theme-radius-2xl: 8px;
   --theme-radius-full: 9999px;
-  --theme-primary: #14b8a6;
-  --theme-primary-50: #f0fdfa;
-  --theme-primary-100: #ccfbf1;
-  --theme-primary-200: #99f6e4;
-  --theme-primary-300: #5eead4;
-  --theme-primary-400: #2dd4bf;
-  --theme-primary-500: #14b8a6;
-  --theme-primary-600: #0d9488;
-  --theme-primary-700: #0f766e;
-  --theme-primary-800: #115e59;
-  --theme-primary-900: #134e4a;
-  --theme-secondary: #3b82f6;
-  --theme-secondary-50: #eff6ff;
-  --theme-secondary-100: #dbeafe;
-  --theme-secondary-200: #bfdbfe;
-  --theme-secondary-300: #93c5fd;
-  --theme-secondary-400: #60a5fa;
-  --theme-secondary-500: #3b82f6;
-  --theme-secondary-600: #2563eb;
-  --theme-secondary-700: #1d4ed8;
-  --theme-secondary-800: #1e40af;
-  --theme-secondary-900: #1e3a8a;
-  --theme-accent: #F59E0B;
+  /* Kept in step with .theme-2026 above on purpose. The palette audit in
+     quality/contrast.py models this exact cascade -- .theme-X on <body> beats
+     [data-theme="X"] on <html> -- and reports a token defined differently in
+     the two places, because that is a difference nobody sees until a page uses
+     the losing one. */
+  --theme-primary: #0E6B3D;
+  --theme-primary-50: #f0f7f2;
+  --theme-primary-100: #d6ebdd;
+  --theme-primary-200: #a9d6bb;
+  --theme-primary-300: #74bb93;
+  --theme-primary-400: #3f9a6b;
+  --theme-primary-500: #16874c;
+  --theme-primary-600: #0E6B3D;
+  --theme-primary-700: #0A512E;
+  --theme-primary-800: #073a21;
+  --theme-primary-900: #052716;
+  --theme-secondary: #3DDC84;
+  --theme-secondary-50: #eefbf3;
+  --theme-secondary-100: #cdf4de;
+  --theme-secondary-200: #9fe9c0;
+  --theme-secondary-300: #6fdfa2;
+  --theme-secondary-400: #3DDC84;
+  --theme-secondary-500: #2bc972;
+  --theme-secondary-600: #1fa85c;
+  --theme-secondary-700: #178447;
+  --theme-secondary-800: #116034;
+  --theme-secondary-900: #0b4324;
+  --theme-accent: #8A4E06;
+  --theme-accent-bg: #FDF2E0;
 }
 
 .theme-2026 h1, .theme-2026 h2, .theme-2026 h3, .theme-2026 h4 {
@@ -4709,12 +4962,14 @@ select {
   font-family: var(--theme-font-body);
 }
 
+/* A flat ground. This was three stacked gradients -- two tinted radial washes
+   and a vertical fade -- which is the single clearest tell of a generated page,
+   and it fought every section that tried to establish its own background.
+   Sections separate themselves by alternating white and --theme-bg-light. */
+
 body.theme-2026 {
-  background-color: #f4f1ec;
-  background-image:
-    radial-gradient(ellipse 120% 80% at 10% 0%, rgba(20, 184, 166, 0.09) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
-    linear-gradient(180deg, #f8f6f2 0%, #ebe6df 100%);
+  background-color: #FFFFFF;
+  color: var(--theme-text);
 }
 
 .theme-2026 .hero-2026 {
@@ -4873,9 +5128,15 @@ body.theme-2026 {
   margin-top: 0.25rem;
 }
 
+/* The lead action. Named for the amber it used to be; it is now the theme's
+   spring green, which is the one fill that carries dark text at speed. Pointing
+   it at --theme-accent gave 2.76:1 once that became ochre, because ochre is a
+   dark colour meant for text on a light tint rather than a fill. Renaming the
+   class is a template change and belongs in the next pass. */
+
 .theme-2026 .btn-gold {
-  background: var(--theme-accent);
-  color: var(--theme-dark);
+  background: var(--theme-secondary);
+  color: #06281A;
   padding: 1rem 2.5rem;
   border-radius: 50px;
   font-weight: 700;
@@ -4887,13 +5148,12 @@ body.theme-2026 {
 }
 
 .theme-2026 .btn-gold:hover {
-  background: #D97706;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.45);
+  background: #2bc972;
+  color: #06281A;
 }
 
 .theme-2026 .btn-gold:focus-visible {
-  outline: 3px solid rgba(245, 158, 11, 0.6);
+  outline: 3px solid var(--theme-secondary);
   outline-offset: 3px;
 }
 
@@ -5770,6 +6030,129 @@ body.theme-2026 {
   }
 }
 
+/* ==========================================================================
+   Accessibility primitives -- identical in every theme.
+
+   Kept in each theme's source rather than a shared partial because the three
+   input files do not import one another; if a fourth theme is added, copy this
+   block into it. The audit in pyconng.apps.quality fails without the skip link.
+   ========================================================================== */
+
+/*
+ * Skip link: the first focusable element on every page. Off-screen until
+ * focused, then pinned to the top so it cannot be missed. Without it a keyboard
+ * or screen-reader visitor tabs through the whole navigation on every page
+ * before reaching the content (WCAG 2.4.1).
+ */
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: var(--theme-primary, #0f766e);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 150ms ease-in-out;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/*
+ * A visible focus ring for anything that has not asked for its own. Uses
+ * :focus-visible so it appears for keyboard users without ringing every mouse
+ * click (WCAG 2.4.7). Elements carrying Tailwind's focus:ring-* utilities keep
+ * those: a utility class outranks these element selectors.
+ */
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--theme-accent, var(--theme-primary, #0f766e));
+  outline-offset: 2px;
+}
+
+/*
+ * Respect a reduced-motion preference (WCAG 2.3.3). Animations are stopped
+ * rather than transitions: the looping ones -- bounce-light, tech-pulse,
+ * creative-float -- are the ones that cause trouble, while a 200ms colour
+ * transition on hover does not, and some themes deliberately keep those.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Fields on an admin-defined form (the contact page's, built with
+ * wagtail.contrib.forms). Those widgets are plain Django ones with no classes to
+ * hook, so the form wrapper carries the class and the fields are styled through
+ * it. A visible focus ring is part of the rule rather than left to the browser.
+ */
+
+.pycon-form input[type="text"],
+.pycon-form input[type="email"],
+.pycon-form input[type="url"],
+.pycon-form input[type="tel"],
+.pycon-form input[type="number"],
+.pycon-form input[type="date"],
+.pycon-form input[type="datetime-local"],
+.pycon-form select,
+.pycon-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+}
+
+.pycon-form textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.pycon-form input:focus-visible,
+.pycon-form select:focus-visible,
+.pycon-form textarea:focus-visible {
+  outline: 3px solid var(--theme-primary, #0f766e);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.pycon-form input[type="checkbox"],
+.pycon-form input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+}
+
+.pycon-form ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pycon-form ul li {
+  margin-bottom: 0.375rem;
+}
+
 @media (min-width: 1024px) {
   .lg\:prose-lg {
     font-size: 1.125rem;
@@ -6019,6 +6402,14 @@ body.theme-2026 {
   }
 }
 
+.first\:border-0:first-child {
+  border-width: 0px;
+}
+
+.first\:pt-0:first-child {
+  padding-top: 0px;
+}
+
 .last\:border-0:last-child {
   border-width: 0px;
 }
@@ -6104,9 +6495,19 @@ body.theme-2026 {
   background-color: rgb(55 65 81 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-gray-800:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(31 41 55 / var(--tw-bg-opacity, 1));
+}
+
 .hover\:bg-gray-900:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(17 24 39 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:bg-green-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(220 252 231 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:bg-green-700:hover {
@@ -6142,6 +6543,11 @@ body.theme-2026 {
 .hover\:bg-red-50:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:bg-red-800:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(153 27 27 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:bg-teal-50:hover {
@@ -6222,6 +6628,11 @@ body.theme-2026 {
   color: rgb(15 118 110 / var(--tw-text-opacity, 1));
 }
 
+.hover\:text-teal-800:hover {
+  --tw-text-opacity: 1;
+  color: rgb(17 94 89 / var(--tw-text-opacity, 1));
+}
+
 .hover\:text-white:hover {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
@@ -6283,11 +6694,6 @@ body.theme-2026 {
   --tw-ring-color: var(--theme-primary);
 }
 
-.focus\:ring-blue-500:focus {
-  --tw-ring-opacity: 1;
-  --tw-ring-color: rgb(59 130 246 / var(--tw-ring-opacity, 1));
-}
-
 .focus\:ring-primary-500:focus {
   --tw-ring-opacity: 1;
   --tw-ring-color: rgb(14 165 233 / var(--tw-ring-opacity, 1));
@@ -6307,6 +6713,25 @@ body.theme-2026 {
   --tw-ring-offset-width: 2px;
 }
 
+.focus-visible\:outline-none:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-visible\:ring-2:focus-visible {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+
+.focus-visible\:ring-\[var\(--theme-primary\)\]:focus-visible {
+  --tw-ring-color: var(--theme-primary);
+}
+
+.focus-visible\:ring-offset-2:focus-visible {
+  --tw-ring-offset-width: 2px;
+}
+
 .group:hover .group-hover\:translate-x-1 {
   --tw-translate-x: 0.25rem;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
@@ -6318,6 +6743,10 @@ body.theme-2026 {
 }
 
 @media (min-width: 640px) {
+  .sm\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+
   .sm\:mt-0 {
     margin-top: 0px;
   }
@@ -6400,6 +6829,10 @@ body.theme-2026 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .md\:flex-row {
     flex-direction: row;
   }
@@ -6414,8 +6847,20 @@ body.theme-2026 {
     margin-left: calc(1.5rem * calc(1 - var(--tw-space-x-reverse)));
   }
 
+  .md\:p-10 {
+    padding: 2.5rem;
+  }
+
+  .md\:p-14 {
+    padding: 3.5rem;
+  }
+
   .md\:p-6 {
     padding: 1.5rem;
+  }
+
+  .md\:p-7 {
+    padding: 1.75rem;
   }
 
   .md\:p-8 {

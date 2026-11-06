@@ -55,6 +55,29 @@
         {% endwith %}
         {% endblock %}
 
+        {% comment %}The edition's palette, after the stylesheet so it wins.
+
+          This is what makes a colour change a one-field edit in the admin
+          rather than a deploy: the theme CSS declares the defaults, and these
+          three override them for this edition only. An edition that has not set
+          a colour, or has an unusable one, simply emits nothing and the
+          stylesheet stands.
+
+          Every value comes from Edition.css_variables(), which drops anything
+          that is not a plain hex colour. That check is not decoration: CSS is
+          not an HTML context, so autoescaping does not apply here, and a value
+          with a brace in it could otherwise write its own rules.
+        {% endcomment %}
+        {% with palette=conference_year_info.css_variables %}
+        {% if palette %}
+        <style>
+            :root {
+            {% for property, value in palette %}{{ property }}: {{ value }};
+            {% endfor %}}
+        </style>
+        {% endif %}
+        {% endwith %}
+
         {% block extra_css %}{% endblock %}
 
         <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">

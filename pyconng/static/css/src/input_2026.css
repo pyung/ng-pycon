@@ -318,35 +318,69 @@
 }
 
 /* ========== 2026 Theme - Future Forward ========== */
+/* ===================== 2026 theme tokens =====================
+   One ground, one primary, one counterpart for dark surfaces and one accent
+   reserved for deadlines. The previous set ran a teal primary, a blue
+   secondary and an amber accent at full saturation, so nothing could be
+   emphasised because everything already was.
+
+   --theme-primary, --theme-secondary and --theme-accent are overridden per
+   edition by a <style> block the base template emits from the Edition record,
+   so these three are defaults rather than fixed values. Everything else here
+   is structural and needs a deploy to change. */
 .theme-2026 {
   --theme-font-heading: 'Syne', system-ui, sans-serif;
   --theme-font-body: 'Source Sans 3', system-ui, sans-serif;
-  --theme-primary: #0F766E;
-  --theme-primary-light: #14B8A6;
-  --theme-primary-mid: #115E59;
-  --theme-primary-50: #f0fdfa;
-  --theme-primary-100: #ccfbf1;
-  --theme-primary-200: #99f6e4;
-  --theme-primary-300: #5eead4;
-  --theme-primary-400: #2dd4bf;
-  --theme-primary-500: #14b8a6;
-  --theme-primary-600: #0d9488;
-  --theme-primary-700: #0f766e;
-  --theme-primary-800: #115e59;
-  --theme-primary-900: #134e4a;
-  --theme-accent: #F59E0B;
-  --theme-dark: #0B1F24;
-  --theme-text: #1F2937;
-  --theme-text-light: #E5E7EB;
-  --theme-bg-light: #F9FAFB;
-  --theme-shadow-sm: 0 1px 3px rgba(15, 118, 110, 0.12);
-  --theme-shadow-md: 0 4px 12px rgba(15, 118, 110, 0.15);
-  --theme-shadow-lg: 0 8px 24px rgba(15, 118, 110, 0.18);
-  --theme-shadow-xl: 0 16px 40px rgba(15, 118, 110, 0.22);
-  --theme-radius-sm: 8px;
-  --theme-radius-md: 16px;
-  --theme-radius-lg: 24px;
-  --theme-radius-xl: 32px;
+
+  /* Deep green, on light grounds only. 6.1:1 on white, so it carries body
+     text and not just headings. */
+  --theme-primary: #0E6B3D;
+  --theme-primary-light: #3DDC84;
+  --theme-primary-mid: #0A512E;
+  --theme-primary-50: #f0f7f2;
+  --theme-primary-100: #d6ebdd;
+  --theme-primary-200: #a9d6bb;
+  --theme-primary-300: #74bb93;
+  --theme-primary-400: #3f9a6b;
+  --theme-primary-500: #16874c;
+  --theme-primary-600: #0E6B3D;
+  --theme-primary-700: #0A512E;
+  --theme-primary-800: #073a21;
+  --theme-primary-900: #052716;
+
+  /* Spring: the primary's counterpart on dark grounds. Never on white, where
+     it fails contrast -- that is what --theme-primary is for. */
+  --theme-secondary: #3DDC84;
+
+  /* Ochre, and deadlines alone. Its scarcity is the point: when it shows up,
+     something has a date attached. 5.9:1 on its own tint. */
+  --theme-accent: #8A4E06;
+  --theme-accent-bg: #FDF2E0;
+
+  /* Grounds and ink. Near-black with a green cast so it sits with the primary
+     rather than fighting it; a cool off-white rather than cream. */
+  --theme-dark: #0D1711;
+  --theme-dark-2: #0A120D;
+  --theme-hairline: #1E2B23;
+  --theme-text: #0D1711;
+  --theme-text-2: #2E3A33;
+  --theme-muted: #5A6861;
+  --theme-text-light: #B9C7BE;
+  --theme-bg-light: #F1F4F1;
+  --theme-line: #DCE2DD;
+
+  /* Structure comes from hairlines and a grid, not from stacked shadows. */
+  --theme-shadow-sm: 0 1px 2px rgba(13, 23, 17, 0.06);
+  --theme-shadow-md: 0 1px 3px rgba(13, 23, 17, 0.08);
+  --theme-shadow-lg: 0 2px 6px rgba(13, 23, 17, 0.08);
+  --theme-shadow-xl: 0 4px 12px rgba(13, 23, 17, 0.10);
+
+  /* 4px on controls, square on structure. Soft corners on everything read as
+     generic; the old scale went to 32px. */
+  --theme-radius-sm: 3px;
+  --theme-radius-md: 4px;
+  --theme-radius-lg: 4px;
+  --theme-radius-xl: 6px;
 }
 
 [data-theme="2026"] {
@@ -371,45 +405,52 @@
   --theme-spacing-2xl: 3rem;
   --theme-spacing-3xl: 4rem;
   --theme-spacing-4xl: 6rem;
-  --theme-radius-sm: 6px;
-  --theme-radius-md: 8px;
-  --theme-radius-lg: 12px;
-  --theme-radius-xl: 16px;
-  --theme-radius-2xl: 24px;
+  --theme-radius-sm: 3px;
+  --theme-radius-md: 4px;
+  --theme-radius-lg: 4px;
+  --theme-radius-xl: 6px;
+  --theme-radius-2xl: 8px;
   --theme-radius-full: 9999px;
-  --theme-primary: #14b8a6;
-  --theme-primary-50: #f0fdfa;
-  --theme-primary-100: #ccfbf1;
-  --theme-primary-200: #99f6e4;
-  --theme-primary-300: #5eead4;
-  --theme-primary-400: #2dd4bf;
-  --theme-primary-500: #14b8a6;
-  --theme-primary-600: #0d9488;
-  --theme-primary-700: #0f766e;
-  --theme-primary-800: #115e59;
-  --theme-primary-900: #134e4a;
-  --theme-secondary: #3b82f6;
-  --theme-secondary-50: #eff6ff;
-  --theme-secondary-100: #dbeafe;
-  --theme-secondary-200: #bfdbfe;
-  --theme-secondary-300: #93c5fd;
-  --theme-secondary-400: #60a5fa;
-  --theme-secondary-500: #3b82f6;
-  --theme-secondary-600: #2563eb;
-  --theme-secondary-700: #1d4ed8;
-  --theme-secondary-800: #1e40af;
-  --theme-secondary-900: #1e3a8a;
-  --theme-accent: #F59E0B;
+  /* Kept in step with .theme-2026 above on purpose. The palette audit in
+     quality/contrast.py models this exact cascade -- .theme-X on <body> beats
+     [data-theme="X"] on <html> -- and reports a token defined differently in
+     the two places, because that is a difference nobody sees until a page uses
+     the losing one. */
+  --theme-primary: #0E6B3D;
+  --theme-primary-50: #f0f7f2;
+  --theme-primary-100: #d6ebdd;
+  --theme-primary-200: #a9d6bb;
+  --theme-primary-300: #74bb93;
+  --theme-primary-400: #3f9a6b;
+  --theme-primary-500: #16874c;
+  --theme-primary-600: #0E6B3D;
+  --theme-primary-700: #0A512E;
+  --theme-primary-800: #073a21;
+  --theme-primary-900: #052716;
+  --theme-secondary: #3DDC84;
+  --theme-secondary-50: #eefbf3;
+  --theme-secondary-100: #cdf4de;
+  --theme-secondary-200: #9fe9c0;
+  --theme-secondary-300: #6fdfa2;
+  --theme-secondary-400: #3DDC84;
+  --theme-secondary-500: #2bc972;
+  --theme-secondary-600: #1fa85c;
+  --theme-secondary-700: #178447;
+  --theme-secondary-800: #116034;
+  --theme-secondary-900: #0b4324;
+  --theme-accent: #8A4E06;
+  --theme-accent-bg: #FDF2E0;
 }
 
 .theme-2026 h1, .theme-2026 h2, .theme-2026 h3, .theme-2026 h4 { font-family: var(--theme-font-heading); letter-spacing: -0.03em; }
 .theme-2026 body, .theme-2026 p { font-family: var(--theme-font-body); }
+/* A flat ground. This was three stacked gradients -- two tinted radial washes
+   and a vertical fade -- which is the single clearest tell of a generated page,
+   and it fought every section that tried to establish its own background.
+   Sections separate themselves by alternating white and --theme-bg-light. */
 body.theme-2026 {
-  background-color: #f4f1ec;
-  background-image:
-    radial-gradient(ellipse 120% 80% at 10% 0%, rgba(20, 184, 166, 0.09) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
-    linear-gradient(180deg, #f8f6f2 0%, #ebe6df 100%);
+  background-color: #FFFFFF;
+  color: var(--theme-text);
 }
 .theme-2026 .hero-2026 {
   --hero-dot: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' viewBox='0 0 6 6'%3E%3Ccircle cx='1' cy='1' r='0.5' fill='%2314b8a6' fill-opacity='0.12'/%3E%3C/svg%3E");
@@ -512,9 +553,14 @@ body.theme-2026 {
 }
 .theme-2026 .countdown-value { font-family: var(--theme-font-heading); font-size: 2.5rem; font-weight: 800; color: var(--theme-accent); line-height: 1; }
 .theme-2026 .countdown-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--theme-text-light); margin-top: 0.25rem; }
+/* The lead action. Named for the amber it used to be; it is now the theme's
+   spring green, which is the one fill that carries dark text at speed. Pointing
+   it at --theme-accent gave 2.76:1 once that became ochre, because ochre is a
+   dark colour meant for text on a light tint rather than a fill. Renaming the
+   class is a template change and belongs in the next pass. */
 .theme-2026 .btn-gold {
-  background: var(--theme-accent);
-  color: var(--theme-dark);
+  background: var(--theme-secondary);
+  color: #06281A;
   padding: 1rem 2.5rem;
   border-radius: 50px;
   font-weight: 700;
@@ -524,9 +570,9 @@ body.theme-2026 {
   transition: all 0.3s ease;
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
 }
-.theme-2026 .btn-gold:hover { background: #D97706; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(245, 158, 11, 0.45); }
+.theme-2026 .btn-gold:hover { background: #2bc972; color: #06281A; }
 .theme-2026 .btn-gold:focus-visible {
-  outline: 3px solid rgba(245, 158, 11, 0.6);
+  outline: 3px solid var(--theme-secondary);
   outline-offset: 3px;
 }
 .theme-2026 .btn-outline {

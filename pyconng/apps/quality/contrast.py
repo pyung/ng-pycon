@@ -34,6 +34,12 @@ class Pair:
     #: 4.5 for normal text, 3.0 for large text (>=24px, or >=18.66px bold) and
     #: for the boundary of a user-interface component.
     minimum: float = 4.5
+    #: A selector this pair only applies to. The pair is skipped for a theme
+    #: whose stylesheet does not contain it, which is the same principle as
+    #: skipping a pair whose tokens a theme does not declare: .btn-gold exists
+    #: only in the 2026 theme, and reporting a ratio for it against 2024's
+    #: palette describes something nobody can see.
+    selector: str = ""
 
 
 #: The combinations the themes put on screen. Each names the rule that creates it
@@ -41,7 +47,16 @@ class Pair:
 CHECKED_PAIRS = (
     Pair(".theme-button label", "#ffffff", "--theme-primary"),
     Pair(".theme-link on a light page", "--theme-primary", "#ffffff"),
-    Pair(".btn-gold label", "--theme-dark", "--theme-accent"),
+    # The lead action's fill. It was --theme-accent under dark text; the 2026
+    # theme moved it to --theme-secondary when the accent became a dark ochre
+    # reserved for text on a tint. The pair is named for the class it checks, so
+    # it has to follow the rule rather than the token's old job.
+    Pair(".btn-gold label", "#06281A", "--theme-secondary", selector=".btn-gold"),
+    # Ochre is only ever text, so it is checked against the tint it sits on.
+    Pair(
+        ".deadline notice text", "--theme-accent", "--theme-accent-bg",
+        selector="--theme-accent-bg",
+    ),
     Pair(".btn-outline label", "--theme-primary-light", "--theme-dark"),
     Pair(".dark-section body text", "--theme-text-light", "--theme-dark"),
     Pair("page body text", "--theme-text", "--theme-bg-light"),
@@ -159,13 +174,16 @@ def audit_palette(css_text, theme):
     """
     ``[(Pair, ratio, passes)]`` for every pair whose colours the theme defines.
 
-    A pair using a token the theme does not declare is skipped rather than
-    guessed at: the 2024 palette has no --theme-dark, and inventing one would
-    report a ratio for something nobody sees.
+    A pair is skipped rather than guessed at when the theme does not declare one
+    of its tokens -- the 2024 palette has no --theme-dark -- or when it names a
+    selector this theme's stylesheet never defines. Both would report a ratio
+    for something nobody can see.
     """
     palette = parse_palette(css_text, theme)
     results = []
     for pair in CHECKED_PAIRS:
+        if pair.selector and pair.selector not in css_text:
+            continue
         foreground = resolve(pair.foreground, palette)
         background = resolve(pair.background, palette)
         if not foreground or not background:

@@ -12,6 +12,8 @@ the authority on which years exist, which one is current, and how each looks.
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
+from .validators import HEX_COLOR, validate_hex_color
+
 
 class EditionQuerySet(models.QuerySet):
     def published(self):
@@ -49,10 +51,26 @@ class Edition(models.Model):
         ),
     )
     primary_color = models.CharField(
-        max_length=7, default="#14b8a6", help_text="Hex, e.g. #14b8a6. Used for theme-color.",
+        max_length=7,
+        default="#0E6B3D",
+        validators=[validate_hex_color],
+        help_text=(
+            "Hex, e.g. #0E6B3D. Emitted as --theme-primary, so retuning the "
+            "palette needs no deploy."
+        ),
     )
-    secondary_color = models.CharField(max_length=7, default="#3b82f6", help_text="Hex.")
-    accent_color = models.CharField(max_length=7, default="#f97316", help_text="Hex.")
+    secondary_color = models.CharField(
+        max_length=7,
+        default="#3DDC84",
+        validators=[validate_hex_color],
+        help_text="Hex. Emitted as --theme-secondary. For dark grounds in the 2026 theme.",
+    )
+    accent_color = models.CharField(
+        max_length=7,
+        default="#8A4E06",
+        validators=[validate_hex_color],
+        help_text="Hex. Emitted as --theme-accent. Reserved for deadlines in the 2026 theme.",
+    )
 
     # --- Dates and place ---------------------------------------------------
     starts_on = models.DateField(null=True, blank=True)
@@ -112,6 +130,34 @@ class Edition(models.Model):
         old hard-coded CONFERENCE_YEARS dict exposed.
         """
         return [self.primary_color, self.secondary_color, self.accent_color]
+
+    #: Field name -> the CSS custom property it feeds.
+    CSS_VARIABLE_MAP = (
+        ("primary_color", "--theme-primary"),
+        ("secondary_color", "--theme-secondary"),
+        ("accent_color", "--theme-accent"),
+    )
+
+    def css_variables(self):
+        """
+        ``[(property, value)]`` for the palette, skipping anything unsafe.
+
+        The point of this method is that the template never has to trust the
+        database. The field validator stops a bad value being typed, but rows
+        predate it and a data import bypasses it -- and these go into a
+        ``<style>`` block, where Django's HTML autoescaping does not apply,
+        because CSS is not an HTML context. A value containing ``}`` could close
+        the rule and write its own; one containing ``</style>`` could leave CSS
+        altogether. So the check is repeated at the moment of use: anything that
+        is not a plain hex colour is left out and the stylesheet's own default
+        stands, which is a dull page rather than an injected one.
+        """
+        out = []
+        for field, prop in self.CSS_VARIABLE_MAP:
+            value = (getattr(self, field, "") or "").strip()
+            if HEX_COLOR.match(value):
+                out.append((prop, value))
+        return out
 
     @property
     def dates_display(self):
